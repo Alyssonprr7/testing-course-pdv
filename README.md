@@ -1,5 +1,18 @@
 # pdv
-Sistema de ERP web desenvolvido em Java com Spring Framework 
+
+Projeto desenvolvido para a disciplina de Qualidade e Testes de Software, do curso de Sistemas de Informação da Universidade Federal Fluminense (UFF).
+
+Sistema de ERP web desenvolvido em Java com Spring Framework
+
+# Integrantes
+- Alysson Rocha
+- Bruno
+- Daniel
+- Felipe Rato
+- José Augusto
+
+# Plano de Teste
+[Acesse o plano de teste aqui](https://docs.google.com/document/d/1uxhmSSpGm3gTKWZWIFvaeuEIjmxqehvo/edit?usp=sharing&ouid=109721338967909889524&rtpof=true&sd=true)
 
 # Recursos
 - Cadastro produtos/clientes/fornecedor
