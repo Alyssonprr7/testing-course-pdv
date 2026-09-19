@@ -176,3 +176,87 @@ Revisão dos 18 testes novos:
 A IA não conseguiu compilar nem executar os testes neste ambiente, então nenhum
 resultado de "passou/falhou" foi verificado por ela. A conferência final depende
 de rodar a suíte localmente.
+
+---
+
+## 3. Testes unitários de `CaixaService.fechaCaixa`
+
+- **Data:** 19/09/2026
+- **Responsável:** Alysson
+- **Ferramenta:** Claude (Claude Code)
+
+**Objetivo**
+
+Criar a suíte de testes unitários do método `fechaCaixa`, reaproveitando o
+scaffold da entrada 2 (mocks, contexto de segurança, reset do singleton
+`Aplicacao` e helpers), no mesmo fluxo: testes sugeridos, validação, cobertura das
+lacunas e nova validação.
+
+### Passo 1 — Sugerir os testes
+
+**Prompt utilizado (melhorado para clareza)**
+
+> Crie os testes do método `fechaCaixa` cobrindo exatamente estes cenários:
+> 1. Senha `""`: retorno "Favor, informe a senha".
+> 2. Senha `null`: provavelmente lança exceção; o teste deve documentar isso.
+> 3. `usuario.getSenha()` retornando `"1234"` e senha enviada `"123"`: retorno
+>    "Senha incorreta, favor verifique".
+> 4. Caixa com data de fechamento já preenchida: exceção "Caixa já esta fechado".
+> 5. `caixas.save(...)` lançando exceção genérica via Mockito: a mensagem
+>    validada deve ser "Ocorreu um erro ao fechar o caixa, chame o suporte".
+> 6. Caixa com valor total `null`: retorno "Caixa fechado com sucesso" e valor de
+>    fechamento 0.0.
+> 7. `usuarios.buscaUsuario(...)` lançando exceção: a mensagem deve chegar
+>    intacta ao chamador.
+> 8. Fechamento correto com senha válida: retorno "Caixa fechado com sucesso".
+
+**Resultado**
+
+8 testes. O cenário 2 chegou com o enunciado cortado; assumi que o comportamento
+esperado é `NullPointerException` (`senha.equals("")` sem validação de `null`).
+
+### Passo 2 — Validar as implementações
+
+- No cenário 3, `"1234"` não é um hash BCrypt válido: o `matches` retorna `false`
+  (com aviso no log), então o resultado esperado é obtido.
+- O cenário 8 confere também o valor de fechamento, a data preenchida e uma única
+  chamada a `save`.
+- Criado o helper `criaCaixaAberto(valorTotal)` para os cenários com caixa
+  recuperado por `findById`.
+
+### Passo 3 — Pedir para cobrir os cenários que faltaram
+
+**Prompt utilizado (melhorado para clareza)**
+
+> Assuma o papel de um testador experiente. Analise os testes já escritos para
+> `fechaCaixa`, identifique cenários ainda não cobertos (efeitos colaterais que
+> não podem ocorrer, entradas inválidas, valores limite, falhas de dependências)
+> e crie os testes necessários.
+
+**Resultado**
+
+14 testes adicionais:
+
+- **Efeitos colaterais:** sem `findById` nem `save` com senha vazia ou incorreta;
+  sem `save` com caixa já fechado; `findById` e `save` chamados uma vez, com o
+  mesmo objeto.
+- **Senha:** senha só com espaço e senha correta com espaço no final são
+  incorretas; usuário com senha `null` retorna "Senha incorreta".
+- **Falhas de dependência:** exceção em `findById` chega intacta; `buscaUsuario`
+  retornando `null` gera `NullPointerException`; caixa inexistente
+  (`Optional.empty()`) gera `NoSuchElementException`.
+- **Valores:** total 0.0 resulta em fechamento 0.0; total negativo é copiado sem
+  validação; data de fechamento fica entre o instante antes e depois da chamada.
+
+### Passo 4 — Validar novamente os resultados
+
+- Os testes de usuário inexistente, caixa inexistente, senha nula e valor total
+  negativo **documentam o comportamento atual**, que provavelmente é um defeito do
+  `CaixaService`. Se o service for corrigido, esses testes devem ser atualizados.
+- Execução: **pendente**. Os testes ainda não foram rodados; confirmar na IDE (ou
+  com Maven local) e anexar a evidência de execução e cobertura.
+
+**Limitações da IA / observações**
+
+A IA não conseguiu compilar nem executar os testes neste ambiente, então nenhum
+resultado de "passou/falhou" foi verificado por ela.
