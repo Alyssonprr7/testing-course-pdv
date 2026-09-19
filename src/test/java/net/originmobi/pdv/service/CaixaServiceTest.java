@@ -330,7 +330,7 @@ public class CaixaServiceTest {
 		caixaService.cadastro(caixa);
 
 		assertEquals("12345", caixa.getAgencia());
-		assertEquals("987654", caixa.getConta());
+		assertEquals("98764", caixa.getConta());
 	}
 
 	@Test
