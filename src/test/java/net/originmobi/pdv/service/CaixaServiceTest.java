@@ -1,9 +1,11 @@
 package net.originmobi.pdv.service;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -11,7 +13,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.lang.reflect.Field;
+import java.sql.Date;
 import java.sql.Timestamp;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.After;
@@ -31,6 +36,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import net.originmobi.pdv.enumerado.caixa.CaixaTipo;
 import net.originmobi.pdv.enumerado.caixa.EstiloLancamento;
 import net.originmobi.pdv.enumerado.caixa.TipoLancamento;
+import net.originmobi.pdv.filter.BancoFilter;
+import net.originmobi.pdv.filter.CaixaFilter;
 import net.originmobi.pdv.model.Caixa;
 import net.originmobi.pdv.model.CaixaLancamento;
 import net.originmobi.pdv.model.Usuario;
@@ -587,6 +594,195 @@ public class CaixaServiceTest {
 
 		verify(caixas, times(1)).findById(1L);
 		verify(caixas, times(1)).save(caixa);
+	}
+
+	// ------------------------------------------- caixaIsAberto
+
+	@Test
+	public void caixaIsAbertoDeveRetornarTrueQuandoExisteCaixaAberto() {
+		when(caixas.caixaAberto()).thenReturn(Optional.of(new Caixa()));
+
+		assertTrue(caixaService.caixaIsAberto());
+	}
+
+	@Test
+	public void caixaIsAbertoDeveRetornarFalseQuandoNaoExisteCaixaAberto() {
+		assertFalse(caixaService.caixaIsAberto());
+	}
+
+	// ------------------------------------------- listarCaixas
+
+	@Test
+	public void listarCaixasDeveListarAbertosQuandoDataNula() {
+		List<Caixa> abertos = Arrays.asList(new Caixa());
+		when(caixas.listaCaixasAbertos()).thenReturn(abertos);
+
+		assertSame(abertos, caixaService.listarCaixas(new CaixaFilter()));
+		verify(caixas, never()).buscaCaixasPorDataAbertura(any(Date.class));
+	}
+
+	@Test
+	public void listarCaixasDeveListarAbertosQuandoDataVazia() {
+		List<Caixa> abertos = Arrays.asList(new Caixa());
+		when(caixas.listaCaixasAbertos()).thenReturn(abertos);
+		CaixaFilter filter = new CaixaFilter();
+		filter.setData_cadastro("");
+
+		assertSame(abertos, caixaService.listarCaixas(filter));
+		verify(caixas, never()).buscaCaixasPorDataAbertura(any(Date.class));
+	}
+
+	@Test
+	public void listarCaixasDeveBuscarPorDataTrocandoBarraPorHifen() {
+		List<Caixa> doDia = Arrays.asList(new Caixa());
+		when(caixas.buscaCaixasPorDataAbertura(Date.valueOf("2026-09-19"))).thenReturn(doDia);
+		CaixaFilter filter = new CaixaFilter();
+		filter.setData_cadastro("2026/09/19");
+
+		assertSame(doDia, caixaService.listarCaixas(filter));
+		assertEquals("2026-09-19", filter.getData_cadastro());
+		verify(caixas, never()).listaCaixasAbertos();
+	}
+
+	@Test
+	public void listarCaixasDeveLancarExcecaoQuandoDataInvalida() {
+		CaixaFilter filter = new CaixaFilter();
+		filter.setData_cadastro("abc");
+
+		thrown.expect(IllegalArgumentException.class);
+
+		caixaService.listarCaixas(filter);
+	}
+
+	// ------------------------------------------- listaBancosAbertosTipoFilterBanco
+
+	@Test
+	public void listaBancosDeveBuscarPorTipoEDataTrocandoBarraPorHifen() {
+		List<Caixa> doDia = Arrays.asList(new Caixa());
+		when(caixas.buscaCaixaTipoData(CaixaTipo.BANCO, Date.valueOf("2026-09-19"))).thenReturn(doDia);
+		BancoFilter filter = new BancoFilter();
+		filter.setData_cadastro("2026/09/19");
+
+		assertSame(doDia, caixaService.listaBancosAbertosTipoFilterBanco(CaixaTipo.BANCO, filter));
+		assertEquals("2026-09-19", filter.getData_cadastro());
+	}
+
+	@Test
+	public void listaBancosDeveBuscarPorTipoQuandoDataNula() {
+		List<Caixa> bancos = Arrays.asList(new Caixa());
+		when(caixas.buscaCaixaTipo(CaixaTipo.BANCO)).thenReturn(bancos);
+
+		assertSame(bancos, caixaService.listaBancosAbertosTipoFilterBanco(CaixaTipo.BANCO, new BancoFilter()));
+	}
+
+	@Test
+	public void listaBancosDeveBuscarPorTipoQuandoDataVazia() {
+		List<Caixa> bancos = Arrays.asList(new Caixa());
+		when(caixas.buscaCaixaTipo(CaixaTipo.BANCO)).thenReturn(bancos);
+		BancoFilter filter = new BancoFilter();
+		filter.setData_cadastro("");
+
+		assertSame(bancos, caixaService.listaBancosAbertosTipoFilterBanco(CaixaTipo.BANCO, filter));
+		verify(caixas, never()).buscaCaixaTipoData(any(CaixaTipo.class), any(Date.class));
+	}
+
+	@Test
+	public void listaBancosDeveIgnorarTipoInformadoQuandoSemData() {
+		// comportamento atual: sem data, o parâmetro tipo é ignorado e sempre usa BANCO
+		List<Caixa> bancos = Arrays.asList(new Caixa());
+		when(caixas.buscaCaixaTipo(CaixaTipo.BANCO)).thenReturn(bancos);
+
+		assertSame(bancos, caixaService.listaBancosAbertosTipoFilterBanco(CaixaTipo.CAIXA, new BancoFilter()));
+		verify(caixas, never()).buscaCaixaTipo(CaixaTipo.CAIXA);
+	}
+
+	@Test
+	public void listaBancosDeveLancarExcecaoQuandoDataInvalida() {
+		BancoFilter filter = new BancoFilter();
+		filter.setData_cadastro("abc");
+
+		thrown.expect(IllegalArgumentException.class);
+
+		caixaService.listaBancosAbertosTipoFilterBanco(CaixaTipo.BANCO, filter);
+	}
+
+	// ------------------------------------------- buscaCaixaUsuario
+
+	@Test
+	public void buscaCaixaUsuarioDeveRetornarCaixaAbertoDoUsuario() {
+		Caixa caixa = criaCaixaAberto(10.0);
+		when(caixas.findByCaixaAbertoUsuario(usuario.getCodigo())).thenReturn(caixa);
+
+		Optional<Caixa> retorno = caixaService.buscaCaixaUsuario(USUARIO_LOGADO);
+
+		assertTrue(retorno.isPresent());
+		assertSame(caixa, retorno.get());
+	}
+
+	@Test
+	public void buscaCaixaUsuarioDeveRetornarVazioQuandoUsuarioSemCaixaAberto() {
+		when(caixas.findByCaixaAbertoUsuario(usuario.getCodigo())).thenReturn(null);
+
+		assertFalse(caixaService.buscaCaixaUsuario(USUARIO_LOGADO).isPresent());
+	}
+
+	@Test
+	public void buscaCaixaUsuarioDeveLancarNullPointerQuandoUsuarioNaoEncontrado() {
+		when(usuarios.buscaUsuario("inexistente")).thenReturn(null);
+
+		thrown.expect(NullPointerException.class);
+
+		caixaService.buscaCaixaUsuario("inexistente");
+	}
+
+	// ------------------------------------------- métodos de delegação
+
+	@Test
+	public void listaTodosDeveDelegarParaRepository() {
+		List<Caixa> lista = Arrays.asList(new Caixa());
+		when(caixas.findByCodigoOrdenado()).thenReturn(lista);
+
+		assertSame(lista, caixaService.listaTodos());
+	}
+
+	@Test
+	public void caixaAbertoDeveDelegarParaRepository() {
+		Optional<Caixa> aberto = Optional.of(new Caixa());
+		when(caixas.caixaAberto()).thenReturn(aberto);
+
+		assertSame(aberto, caixaService.caixaAberto());
+	}
+
+	@Test
+	public void caixasAbertosDeveDelegarParaRepository() {
+		List<Caixa> lista = Arrays.asList(new Caixa());
+		when(caixas.caixasAbertos()).thenReturn(lista);
+
+		assertSame(lista, caixaService.caixasAbertos());
+	}
+
+	@Test
+	public void buscaDeveDelegarParaRepository() {
+		Optional<Caixa> caixa = Optional.of(new Caixa());
+		when(caixas.findById(7L)).thenReturn(caixa);
+
+		assertSame(caixa, caixaService.busca(7L));
+	}
+
+	@Test
+	public void listaBancosDeveBuscarPorTipoBanco() {
+		List<Caixa> bancos = Arrays.asList(new Caixa());
+		when(caixas.buscaBancos(CaixaTipo.BANCO)).thenReturn(bancos);
+
+		assertSame(bancos, caixaService.listaBancos());
+	}
+
+	@Test
+	public void listaCaixasAbertosTipoDeveRepassarOTipo() {
+		List<Caixa> lista = Arrays.asList(new Caixa());
+		when(caixas.buscaCaixaTipo(CaixaTipo.COFRE)).thenReturn(lista);
+
+		assertSame(lista, caixaService.listaCaixasAbertosTipo(CaixaTipo.COFRE));
 	}
 
 	private Caixa criaCaixaAberto(Double valorTotal) {
