@@ -473,3 +473,57 @@ alheio ao trabalho: o ambiente roda **JDK 21** e o projeto declara
 `<java.version>1.8</java.version>`, e o CGLIB do Spring 5.0.6 não sobe sob o
 sistema de módulos do JDK moderno. Confirmado que a falha reproduz com o arquivo
 de teste removido do projeto. Nenhum código de produção foi alterado.
+
+---
+
+## 7. Casos de teste manual de Sangria / Suprimento
+
+- **Data:** 20/09/2026
+- **Responsável:** Bruno
+- **Ferramenta:** Claude (Claude Code)
+
+**Objetivo**
+
+Projetar os casos de teste manual da funcionalidade "Sangria / suprimento de
+caixa", com os quatro cenários mínimos previstos na divisão da equipe: sangria
+com caixa aberto, suprimento com caixa aberto, sangria maior que o saldo e
+conferência do extrato do caixa.
+
+**Prompt utilizado (melhorado para clareza)**
+
+> Analise o sistema real e crie os casos de teste manual da funcionalidade
+> Sangria / Suprimento. Para cada cenário, gere um caso contendo ID,
+> funcionalidade, pré-condição, passos, ação/entrada, resultado esperado,
+> resultado obtido e status. Não invente comportamento esperado: confirme os
+> fluxos pela interface e pelo código. Use os IDs CT-BRU-MAN-001 a
+> CT-BRU-MAN-004 e salve em local adequado dentro de `docs/`.
+
+**Resultado**
+
+`docs/casos-de-teste/bruno-sangria-suprimento.md` com os quatro casos.
+
+Antes de escrever os resultados esperados, a IA levantou no código quatro pontos
+que mudariam o texto dos casos se fossem assumidos por suposição:
+
+- O botão da sangria na interface tem o rótulo **"Retirada"** (não "Sangria"), e
+  o modal se chama "Retirada de Caixa".
+- O retorno do servidor é mostrado em um **alert** do navegador, com o texto que o
+  service devolve (`caixa.js`).
+- O saldo do caixa **não** é atualizado pelo código Java: quem atualiza é o
+  trigger de banco `tr_atualizaValoresCaixa_AFTER_INSERT`, disparado no insert do
+  lançamento (`V1__cria_estrutura_inicial.sql`).
+- Na saída o valor é gravado negativo, então o extrato exibe o valor com sinal
+  negativo e a linha em vermelho.
+
+**Validação**
+
+Os quatro pontos acima foram conferidos por mim nos arquivos citados antes de
+fechar os casos. Os campos **Resultado obtido** e **Status** foram deixados
+explicitamente como "a preencher" / "não executado", porque nenhum caso manual
+havia sido executado no momento em que o documento foi criado.
+
+**Limitações da IA / observações**
+
+A IA não tem navegador nem como capturar tela, então não executa os casos manuais
+nem produz as evidências. A execução e os prints em `docs/evidencias/bruno/` são
+feitos por mim.
