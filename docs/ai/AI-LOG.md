@@ -260,3 +260,37 @@ esperado é `NullPointerException` (`senha.equals("")` sem validação de `null`
 
 A IA não conseguiu compilar nem executar os testes neste ambiente, então nenhum
 resultado de "passou/falhou" foi verificado por ela.
+
+---
+
+## 4. Elaboração e revisão do plano de teste
+
+- **Data:** 20/09/2026
+- **Responsável:** Alysson
+- **Ferramenta:** Claude (Claude Code)
+
+**Objetivo**
+
+Usar a IA como apoio na elaboração e na criação do plano de teste (documento
+vinculado no `README.md`), com revisões do texto já escrito e sugestões do que
+colocar em cada uma das seções.
+
+**O que foi pedido à IA**
+
+1. Sugerir o que cada seção do plano deveria conter, dado o sistema-alvo (`pdv`),
+   a divisão da equipe (entrada 1) e as exigências da disciplina.
+2. Revisar os rascunhos das seções, apontando lacunas, inconsistências e trechos
+   pouco claros.
+
+**Sugestões da IA**
+
+A IA sugeriu o conteúdo esperado de cada seção e comentou os rascunhos, apontando
+pontos a completar ou reescrever. O plano foi escrito e mantido pela equipe, e a IA
+atuou como apoiadora de estrutura e de revisão.
+
+**Validação do grupo**
+
+As sugestões e revisões foram tratadas como ponto de partida. O grupo avaliou cada
+uma, aceitou, adaptou ou descartou conforme o que de fato foi feito no projeto, e
+conferiu que o plano final é coerente com o escopo, a divisão de classes e as
+funcionalidades reais do `pdv`.
