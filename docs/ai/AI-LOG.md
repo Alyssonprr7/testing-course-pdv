@@ -294,3 +294,66 @@ As sugestões e revisões foram tratadas como ponto de partida. O grupo avaliou 
 uma, aceitou, adaptou ou descartou conforme o que de fato foi feito no projeto, e
 conferiu que o plano final é coerente com o escopo, a divisão de classes e as
 funcionalidades reais do `pdv`.
+
+---
+
+## 5. Briefing e geração dos slides da apresentação
+
+- **Data:** 20/09/2026
+- **Responsável:** Alysson
+- **Ferramentas:** Claude (Claude Code) para o briefing; Gemini para os slides
+
+**Objetivo**
+
+Montar os slides da apresentação do trabalho, com foco no processo (como o grupo
+criou, dividiu e executou o trabalho, e como usou IA), e não nos detalhes técnicos
+do código. Uso em duas etapas: o Claude escreve o documento de instruções e o
+Gemini gera a apresentação a partir dele.
+
+### Passo 1 — Criar o briefing (Claude)
+
+**Prompt utilizado (melhorado para clareza)**
+
+> Crie um documento para enviar ao Gemini gerar os slides do trabalho. O foco é o
+> processo de criação e execução, como fizemos e como dividimos o trabalho. Use como
+> fonte o `docs/ai/AI-LOG.md` e a divisão de trabalho da equipe.
+
+**Resultado**
+
+Um arquivo Markdown com: instrução ao Gemini (10 a 12 slides em português, tom
+acadêmico, sugestão de visual e notas do apresentador por slide, proibição de
+inventar dados), estrutura sugerida de 12 slides e o conteúdo de cada um (contexto,
+escolha do `pdv`, tabela de divisão por integrante, papéis transversais, ferramentas
+e organização do repositório, metodologia de uso de IA, estudos de caso de
+`CaixaService.cadastro` e `fechaCaixa`, plano de teste, limitações da IA e lições
+aprendidas).
+
+**Validação**
+
+O briefing foi montado apenas com o que já estava no AI-LOG, no README e na divisão
+de classes, sem incluir datas nem resultados de execução. Como o AI-LOG registra que
+os testes ainda não foram rodados, o briefing informa isso e não cita "passou/falhou"
+nem cobertura.
+
+### Passo 2 — Gerar os slides (Gemini)
+
+**Prompt utilizado**
+
+O conteúdo do briefing do passo 1, enviado ao Gemini como instrução completa.
+
+**Resultado**
+
+Apresentação de slides gerada pelo Gemini a partir do briefing.
+
+**Validação do grupo**
+
+O grupo deve conferir cada slide contra o briefing e contra o repositório (divisão de
+classes, papéis, quantidade de testes, ferramentas), corrigir qualquer dado inventado
+ou impreciso e ajustar o visual antes da apresentação. Pendente: registrar aqui o
+resultado dessa conferência.
+
+**Limitações da IA / observações**
+
+O Gemini trabalha só com o texto do briefing e não tem acesso ao repositório, então
+pode preencher lacunas por conta própria. O briefing pede explicitamente que não
+invente números, datas ou resultados, mas a conferência humana continua necessária.
