@@ -5,14 +5,21 @@
 - **Classe relacionada:** `CaixaLancamentoService` (método `lancamento`)
 - **Ambiente:** aplicação via `docker compose up -d`, navegador em `http://localhost:8080`,
   login `gerente` / senha `123`
-- **Evidências:** `docs/evidencias/bruno/`
+- **Evidências:** `docs/evidencias/bruno/` (inclui `db-antes.txt` e `db-depois.txt` com o
+  estado do banco antes e depois da execução)
+- **Execução:** 20/09/2026, por Bruno Taconi — os 4 casos executados, todos **PASSOU**
 
 ## Observações sobre o comportamento real do sistema
 
 Levantado no código antes de escrever os casos, para não inventar resultado esperado:
 
-- O botão da sangria na tela aparece com o rótulo **"Retirada"**, e o modal tem o
+- O menu lateral se chama **"Caixa / Cofre"**.
+- Os botões **Suprimento**, **Retirada**, **Tranferência** e **Fechar** só existem
+  dentro da tela **Gerenciar Caixa**, não na lista.
+- O botão da sangria aparece com o rótulo **"Retirada"**, e o modal tem o
   título "Retirada de Caixa" (`gerenciar.html`, `modalSangria.html`).
+- Esses botões dependem das permissões `CAIXA_SUPRIMENTO` / `CAIXA_SANGRIA`, que o
+  usuário `gerente` tem por pertencer ao grupo ADMINISTRADOR.
 - O retorno do servidor é exibido em um **alert do navegador**, com o texto que o
   service devolve (`caixa.js`).
 - O saldo do caixa **não** é atualizado pelo Java: quem atualiza é o trigger de
@@ -31,7 +38,8 @@ Levantado no código antes de escrever os casos, para não inventar resultado es
 
 **Passos / ação / entrada**
 
-1. Acessar o menu **Caixa** e abrir o caixa aberto pelo botão **Gerenciar**.
+1. Acessar o menu lateral **Caixa / Cofre**, localizar o caixa aberto na lista e
+   clicar nele para abrir a tela **Gerenciar Caixa** (`/caixa/gerenciar/{codigo}`).
 2. Anotar o valor do campo **Saldo Total**.
 3. Clicar no botão **Retirada**.
 4. Preencher **Valor da Sangria** com `50,00`.
@@ -48,9 +56,9 @@ Levantado no código antes de escrever os casos, para não inventar resultado es
 
 | Campo | Conteúdo |
 |---|---|
-| **Resultado obtido** | _a preencher na execução_ |
-| **Status** | _não executado_ |
-| **Evidência** | `CT-BRU-MAN-001-sangria.png` |
+| **Resultado obtido** | Alert exibido: `Lançamento realizado com sucesso`. Linha 2 criada na tabela Lançamentos com Descrição `sangria teste`, Valor `R$ -50,00`, E/S `SAIDA`, em vermelho. Saldo Total passou de R$ 100,00 para R$ 50,00. |
+| **Status** | **PASSOU** |
+| **Evidência** | `CT-BRU-MAN-001.png` |
 
 ---
 
@@ -79,9 +87,9 @@ Levantado no código antes de escrever os casos, para não inventar resultado es
 
 | Campo | Conteúdo |
 |---|---|
-| **Resultado obtido** | _a preencher na execução_ |
-| **Status** | _não executado_ |
-| **Evidência** | `CT-BRU-MAN-002-suprimento.png` |
+| **Resultado obtido** | Alert exibido: `Lançamento realizado com sucesso`. Linha 3 criada com Descrição `suprimento teste`, Valor `R$ 30,00`, E/S `ENTRADA`, em verde. Saldo Total passou de R$ 50,00 para R$ 80,00. |
+| **Status** | **PASSOU** |
+| **Evidência** | `CT-BRU-MAN-002.png` |
 
 ---
 
@@ -108,9 +116,9 @@ Levantado no código antes de escrever os casos, para não inventar resultado es
 
 | Campo | Conteúdo |
 |---|---|
-| **Resultado obtido** | _a preencher na execução_ |
-| **Status** | _não executado_ |
-| **Evidência** | `CT-BRU-MAN-003-saldo-insuficiente.png` |
+| **Resultado obtido** | Alert exibido: `Saldo insuficiente para realizar esta operação`. Nenhuma linha nova na tabela. Saldo Total permaneceu R$ 80,00. Confirmado no banco: a tabela `caixa_lancamento` continua com 3 registros. |
+| **Status** | **PASSOU** |
+| **Evidência** | `CT-BRU-MAN-003.png` |
 
 ---
 
@@ -136,6 +144,6 @@ Levantado no código antes de escrever os casos, para não inventar resultado es
 
 | Campo | Conteúdo |
 |---|---|
-| **Resultado obtido** | _a preencher na execução_ |
-| **Status** | _não executado_ |
-| **Evidência** | `CT-BRU-MAN-004-extrato.png` |
+| **Resultado obtido** | Tabela lista os 3 lançamentos (abertura R$ 100,00 / sangria R$ -50,00 / suprimento R$ 30,00). A tentativa de R$ 500,00 não aparece. Totais exibidos: Entrada R$ 130,00, Saída R$ 50,00, Saldo Total R$ 80,00. |
+| **Status** | **PASSOU** |
+| **Evidência** | `CT-BRU-MAN-004.png` |

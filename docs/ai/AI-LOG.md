@@ -527,3 +527,73 @@ havia sido executado no momento em que o documento foi criado.
 A IA não tem navegador nem como capturar tela, então não executa os casos manuais
 nem produz as evidências. A execução e os prints em `docs/evidencias/bruno/` são
 feitos por mim.
+
+---
+
+## 8. Execução dos testes manuais de Sangria / Suprimento
+
+- **Data:** 20/09/2026
+- **Responsável:** Bruno
+- **Ferramenta:** Claude (Claude Code)
+
+**Objetivo**
+
+Subir o ambiente, executar os quatro casos manuais de Sangria / Suprimento e
+registrar resultado obtido, status e evidências.
+
+**Prompt utilizado (melhorado para clareza)**
+
+> Verifique a configuração do projeto e suba o sistema da forma prevista (Docker).
+> Confirme aplicação, banco, login e acesso ao fluxo de sangria/suprimento. Depois
+> me oriente na execução dos quatro casos e atualize os documentos com resultado
+> obtido, status e referência à evidência. Não declare um teste como "passou" sem
+> ele ter sido realmente executado.
+
+**Resultado**
+
+Ambiente subido com `docker compose up -d` e verificado: banco `pdv-db` healthy com
+as 2 migrations do Flyway aplicadas, aplicação no ar na porta 8080, login
+`gerente` / `123` autenticando e tela de caixa acessível.
+
+A IA preparou a pré-condição criando um caixa do tipo CAIXA com saldo de
+R$ 100,00 e capturou o estado do banco antes da execução
+(`docs/evidencias/bruno/db-antes.txt`).
+
+A execução na interface foi feita por mim. Resultado dos quatro casos:
+
+| Caso | Cenário | Status |
+|---|---|---|
+| CT-BRU-MAN-001 | Sangria de R$ 50,00 com saldo suficiente | PASSOU |
+| CT-BRU-MAN-002 | Suprimento de R$ 30,00 | PASSOU |
+| CT-BRU-MAN-003 | Sangria de R$ 500,00 com saldo de R$ 80,00 | PASSOU |
+| CT-BRU-MAN-004 | Conferência do extrato e dos saldos | PASSOU |
+
+Evidências em `docs/evidencias/bruno/`, mais o estado do banco depois da execução
+(`db-depois.txt`).
+
+**Ajustes feitos durante a etapa**
+
+O roteiro inicial descrevia o caminho de navegação de forma incompleta: dizia
+apenas "menu Caixa", quando o menu se chama **"Caixa / Cofre"** e os botões
+Suprimento / Retirada só existem dentro da tela **Gerenciar Caixa**, não na lista.
+O documento de casos foi corrigido.
+
+Durante a investigação, a IA também afirmou incorretamente que o usuário `gerente`
+estava sem permissões, por ter consultado a tabela `permissao` em vez de
+`permissoes`. A consulta correta mostra 51 permissões vinculadas ao grupo
+ADMINISTRADOR, incluindo `CAIXA_SANGRIA` e `CAIXA_SUPRIMENTO`. O erro foi
+corrigido antes de qualquer conclusão entrar nos documentos.
+
+**Validação**
+
+Os quatro resultados foram conferidos em duas fontes independentes: os prints da
+interface e o estado do banco. O banco confirma o comportamento esperado —
+`caixa_lancamento` ficou com 3 registros (a tentativa de R$ 500,00 não foi
+persistida) e o caixa ficou com `valor_total` 80, `valor_entrada` 130 e
+`valor_saida` 50.
+
+**Limitações da IA / observações**
+
+A IA não executou nenhum caso pela interface nem capturou prints — não tem
+navegador. A execução e as evidências são minhas; a IA preparou o ambiente,
+conferiu o banco e preencheu os documentos a partir do que foi observado.
