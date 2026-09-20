@@ -597,3 +597,62 @@ persistida) e o caixa ficou com `valor_total` 80, `valor_entrada` 130 e
 A IA não executou nenhum caso pela interface nem capturou prints — não tem
 navegador. A execução e as evidências são minhas; a IA preparou o ambiente,
 conferiu o banco e preencheu os documentos a partir do que foi observado.
+
+---
+
+## 9. Auditoria final da parte de Sangria / Suprimento
+
+- **Data:** 20/09/2026
+- **Responsável:** Bruno
+- **Ferramenta:** Claude (Claude Code)
+
+**Objetivo**
+
+Revisar tudo o que é da minha responsabilidade antes da entrega e produzir um
+checklist do que está pronto e do que ficou pendente.
+
+**Prompt utilizado (melhorado para clareza)**
+
+> Faça uma auditoria apenas da minha responsabilidade: classe de teste, testes
+> unitários e sua execução, casos manuais, resultados, evidências, issues,
+> contribuição no Plano de Teste e no Escopo, entradas no AI-LOG e referências no
+> README. Verifique se tudo está na branch de entrega e gere um checklist com
+> OK / PENDENTE / NÃO SE APLICA.
+
+**Resultado**
+
+A suíte foi reexecutada durante a auditoria (`mvn -o test -Dtest=CaixaLancamentoServiceTest`):
+16 testes, 0 falhas, BUILD SUCCESS. Os 4 casos manuais estão com resultado obtido
+e status preenchidos, sem pendências.
+
+Duas lacunas foram encontradas e corrigidas:
+
+- O arquivo `db-antes.txt` havia sido gerado mas não chegou a ser versionado, e
+  não estava mais no disco. Foi regravado a partir da saída capturada no momento
+  original (20/09/2026 20:01:50), com essa observação registrada no próprio
+  arquivo.
+- O `README.md` não citava a pasta `docs/casos-de-teste/`. A referência foi
+  adicionada.
+
+**Validação**
+
+Conferido que a branch de entrega é a `master` (o repositório não tem `main`,
+apesar de o Plano de Teste citar esse nome) e que tudo está sincronizado com o
+remoto.
+
+Sobre o Plano de Teste: a parte da minha responsabilidade já estava contemplada no
+documento (escopo 1.1.1, papéis 1.3 e entregáveis), então não houve texto novo a
+acrescentar.
+
+**Limitações da IA / observações**
+
+Dois pontos do Plano de Teste continuam divergentes do repositório e não foram
+alterados por serem de seções compartilhadas: o documento cita JUnit 5, mas o
+projeto usa JUnit 4.12; e cita `./mvnw test`, que não funciona no projeto (o
+comando que funciona é `mvn test`).
+
+Também fica registrado que `mvn test` executando a suíte completa termina em
+BUILD FAILURE por causa de `PdvApplicationTests`, que falha ao subir o contexto
+Spring quando o ambiente roda JDK 21 enquanto o projeto declara Java 8. É um
+problema pré-existente, alheio a esta parte do trabalho, e reproduz mesmo com o
+arquivo `CaixaLancamentoServiceTest.java` removido do projeto.

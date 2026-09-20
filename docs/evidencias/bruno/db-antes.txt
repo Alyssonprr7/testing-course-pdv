@@ -1,0 +1,12 @@
+# Estado do banco ANTES da execucao dos casos CT-BRU-MAN-001 a 004
+# Capturado em: 20/09/2026 20:01:50
+# Observacao: arquivo regravado a partir da saida capturada no momento indicado,
+# pois o original nao chegou a ser versionado.
+
+## caixa
+codigo	Descricao	valor_abertura	valor_total	valor_entrada	valor_saida	data_fechamento
+1	Caixa para testes de sangria e suprimento	100	100	100	NULL	NULL
+
+## caixa_lancamento
+codigo	observacao	valor	tipo	estilo	caixa_codigo	data_cadastro
+1	Abertura de caixa	100	SALDOINICIAL	ENTRADA	1	2026-09-20 22:27:19
