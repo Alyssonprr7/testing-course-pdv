@@ -13,6 +13,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.lang.reflect.Field;
 import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.Collections;
@@ -445,6 +446,119 @@ public class RecebimentoServiceTest {
 		verify(parcelas).receber(1L, 100.0, 0.0, 0.0);
 		verify(lancamentos, never()).lancamento(any(CaixaLancamento.class));
 		verify(recebimentos, never()).save(any(Recebimento.class));
+	}
+
+	// ------------------------------------------- argumentos repassados às dependências
+	// Cenários incluídos após a mutação manual: sem eles, trocar esses argumentos
+	// no service não fazia nenhum teste falhar.
+
+	@Test
+	public void deveVincularUsuarioECaixaAbertosAoLancamentoDoCaixa() {
+		// objetos guardados em variáveis para comparar por identidade depois
+		Usuario usuario = new Usuario();
+		Caixa caixa = new Caixa();
+		when(usuarios.buscaUsuario("usuario_teste")).thenReturn(usuario);
+		when(caixas.caixaAberto()).thenReturn(Optional.of(caixa));
+		when(recebimentos.findById(1L)).thenReturn(Optional.of(criaRecebimento(100.0)));
+		when(titulos.busca(1L)).thenReturn(Optional.of(criaTitulo("DIN")));
+		when(receParcelas.parcelasDoReceber(1L)).thenReturn(Arrays.asList(criaParcela(1L, 100.0)));
+
+		recebimentoService.receber(1L, 100.0, 0.0, 0.0, 1L);
+
+		ArgumentCaptor<CaixaLancamento> captor = ArgumentCaptor.forClass(CaixaLancamento.class);
+		verify(lancamentos).lancamento(captor.capture());
+		// o lançamento precisa ser do usuário logado e do caixa que está aberto
+		assertSame(usuario, captor.getValue().getUsuario());
+		assertSame(caixa, captor.getValue().getCaixa().get());
+	}
+
+	@Test
+	public void deveVincularRecebimentoAoLancamentoDoCaixa() throws Exception {
+		Recebimento recebimento = criaRecebimento(100.0);
+		when(recebimentos.findById(1L)).thenReturn(Optional.of(recebimento));
+		when(titulos.busca(1L)).thenReturn(Optional.of(criaTitulo("DIN")));
+		when(receParcelas.parcelasDoReceber(1L)).thenReturn(Arrays.asList(criaParcela(1L, 100.0)));
+
+		recebimentoService.receber(1L, 100.0, 0.0, 0.0, 1L);
+
+		ArgumentCaptor<CaixaLancamento> captor = ArgumentCaptor.forClass(CaixaLancamento.class);
+		verify(lancamentos).lancamento(captor.capture());
+		// CaixaLancamento não possui getRecebimento, então o campo privado é lido por reflexão
+		Field campo = CaixaLancamento.class.getDeclaredField("recebimento");
+		campo.setAccessible(true);
+		assertSame(recebimento, campo.get(captor.getValue()));
+	}
+
+	@Test
+	public void deveEntregarOTituloInformadoAoLancamentoDoCartao() {
+		Titulo titulo = criaTitulo("CARTDEB");
+		when(recebimentos.findById(1L)).thenReturn(Optional.of(criaRecebimento(100.0)));
+		when(titulos.busca(1L)).thenReturn(Optional.of(titulo));
+		when(receParcelas.parcelasDoReceber(1L)).thenReturn(Arrays.asList(criaParcela(1L, 100.0)));
+
+		recebimentoService.receber(1L, 100.0, 0.0, 0.0, 1L);
+
+		// eq(Optional.of(titulo)) exige o título informado, ao contrário de any()
+		verify(cartaoLancamentos).lancamento(eq(100.0), eq(Optional.of(titulo)));
+	}
+
+	@Test
+	public void deveReceberNoCartaoSemConsultarCaixaAberto() {
+		// não há caixa aberto, mas recebimento no cartão não depende de caixa
+		when(caixas.caixaAberto()).thenReturn(Optional.empty());
+		when(recebimentos.findById(1L)).thenReturn(Optional.of(criaRecebimento(100.0)));
+		when(titulos.busca(1L)).thenReturn(Optional.of(criaTitulo("CARTCRED")));
+		when(receParcelas.parcelasDoReceber(1L)).thenReturn(Arrays.asList(criaParcela(1L, 100.0)));
+
+		String retorno = recebimentoService.receber(1L, 100.0, 0.0, 0.0, 1L);
+
+		assertEquals("Recebimento realizado com sucesso", retorno);
+		verify(caixas, never()).caixaAberto();
+	}
+
+	@Test
+	public void deveUsarOsCodigosInformadosEmVezDeValoresFixos() {
+		// códigos diferentes de 1 provam que os argumentos são repassados às dependências
+		Recebimento recebimento = criaRecebimento(100.0);
+		recebimento.setCodigo(5L);
+		when(recebimentos.findById(5L)).thenReturn(Optional.of(recebimento));
+		when(titulos.busca(7L)).thenReturn(Optional.of(criaTitulo("DIN")));
+		when(receParcelas.parcelasDoReceber(5L)).thenReturn(Arrays.asList(criaParcela(1L, 100.0)));
+
+		String retorno = recebimentoService.receber(5L, 100.0, 0.0, 0.0, 7L);
+
+		assertEquals("Recebimento realizado com sucesso", retorno);
+		// o código do recebimento também aparece na observação do lançamento
+		ArgumentCaptor<CaixaLancamento> captor = ArgumentCaptor.forClass(CaixaLancamento.class);
+		verify(lancamentos).lancamento(captor.capture());
+		assertEquals("Referente ao recebimento 5", captor.getValue().getObservacao());
+	}
+
+	// ------------------------------------------- ordem das validações e arredondamento
+
+	@Test
+	public void deveValidarParcelasAntesDoValorRecebido() {
+		when(recebimentos.findById(1L)).thenReturn(Optional.of(criaRecebimento(100.0)));
+		when(titulos.busca(1L)).thenReturn(Optional.of(criaTitulo("DIN")));
+		when(receParcelas.parcelasDoReceber(1L)).thenReturn(Collections.<Parcela>emptyList());
+
+		thrown.expect(RuntimeException.class);
+		thrown.expectMessage("Recebimento não possue parcelas");
+
+		// com as duas condições inválidas (sem parcelas e valor zero), vale a validação de parcelas
+		recebimentoService.receber(1L, 0.0, 0.0, 0.0, 1L);
+	}
+
+	@Test
+	public void deveArredondarTotalParaDuasCasasAntesDeComparar() {
+		// 99,996 é formatado como 100,00; receber 100,00 não pode ser "superior aos títulos"
+		when(recebimentos.findById(1L)).thenReturn(Optional.of(criaRecebimento(99.996)));
+		when(titulos.busca(1L)).thenReturn(Optional.of(criaTitulo("DIN")));
+		when(receParcelas.parcelasDoReceber(1L)).thenReturn(Arrays.asList(criaParcela(1L, 100.0)));
+
+		String retorno = recebimentoService.receber(1L, 100.0, 0.0, 0.0, 1L);
+
+		assertEquals("Recebimento realizado com sucesso", retorno);
 	}
 
 	// ------------------------------------------- helpers
