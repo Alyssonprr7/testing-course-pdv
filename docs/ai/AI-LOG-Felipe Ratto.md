@@ -521,3 +521,60 @@ teste formatado, seguindo o template do grupo.
   prints. (Realizado)
 - Só entraram no documento os dados já coletados na entrada 7; nada foi reexecutado
   pela IA.
+
+
+---
+
+## 9. Redação do corpo das Issues de bug (RC-03, RC-04 e A1)
+
+- **Data:** 20/09/2026
+- **Responsável:** Felipe Ratto
+- **Ferramenta:** Claude, modelo Claude Sonnet 5
+
+**Objetivo**
+
+Redigir o corpo das 3 issues de bug identificadas nos testes manuais da funcionalidade
+"Receber parcela / conta a receber" (RC-03, RC-04) e na preparação de dados (A1), seguindo
+o template de bug report já configurado no repositório (`.github/ISSUE_TEMPLATE/bug_report.md`).
+
+**Prompt utilizado**
+
+> Preciso criar as Issues para os bugs vistos nos testes manuais, o commit referenciado é: 4a4b12e
+
+> Evidencias: docs/evidencias/felipe/manuais
+
+> Anexo: Teste manual - Receber parcela.docx 
+
+
+**Resultado**
+
+A IA gerou o texto de 3 issues (título, labels sugeridas e corpo no formato do template:
+Descrição, Passos para reproduzir, Resultado esperado, Resultado obtido, Ambiente, Causa
+provável, Evidência, Responsável), a partir dos dados já registrados nas Evidencias e Anexo:
+
+- Issue 1 — RC-03: desconto informado no recebimento não é aplicado à baixa da parcela
+  (parcela não quitada apesar do alerta de sucesso).
+- Issue 2 — RC-04: acréscimo informado no recebimento não é refletido no lançamento de
+  caixa (valor cobrado a mais "desaparece" do caixa).
+- Issue 3 — A1: falha ao fechar venda "A Prazo" (`parcela.data_alteracao` sem `DEFAULT`
+  no schema), achado durante a preparação de dados para os testes de RC-01 a RC-05.
+
+
+**Decisão**
+
+- Textos das 3 issues aceitos como estavam, com o commit `4a4b12e` referenciado no campo
+  Ambiente de cada uma.
+- Labels da Issue 2 ajustadas: a IA sugeriu inicialmente apenas `modulo:financeiro`
+  (por a causa do bug estar na `RecebimentoService`), mas Felipe optou por manter também
+  `modulo:caixa` e `modulo:vendas`, por ser onde o sintoma é observado.
+  Responsável mantido como Felipe Ratto em todas, por ter sido quem executou os testes que
+  encontraram os defeitos.
+
+**Validação**
+
+(valores de banco antes/depois, trechos de código citados como causa provável) antes da criação manual no GitHub.
+
+**Limitações da IA / observações**
+
+- A IA não tem acesso ao repositório para criar as issues diretamente (nem foi autorizada
+  a fazer isso nesta interação); o texto gerado precisa ser colado manualmente.
