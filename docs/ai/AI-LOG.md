@@ -357,3 +357,119 @@ resultado dessa conferência.
 O Gemini trabalha só com o texto do briefing e não tem acesso ao repositório, então
 pode preencher lacunas por conta própria. O briefing pede explicitamente que não
 invente números, datas ou resultados, mas a conferência humana continua necessária.
+
+---
+
+## 6. Testes unitários de `CaixaLancamentoService.lancamento`
+
+- **Data:** 20/09/2026
+- **Responsável:** Bruno
+- **Ferramenta:** Claude (Claude Code)
+
+**Objetivo**
+
+Criar a suíte de testes unitários do método `lancamento` da classe
+`CaixaLancamentoService` (JUnit 4 + Mockito), seguindo o mesmo fluxo em cinco
+passos das entradas 2 e 3: scaffold, cenários planejados, validação, cobertura de
+lacunas e validação final.
+
+**Prompt utilizado (melhorado para clareza)**
+
+> Quero criar os testes unitários do método `lancamento` da classe
+> `CaixaLancamentoService`. Use o código real do repositório como fonte e não
+> invente comportamentos que não estejam implementados. O projeto usa Java 8,
+> Spring Boot 2.0.2, JUnit 4 e Mockito. Siga cinco passos: (1) scaffold apenas,
+> com os mocks e helpers realmente necessários; (2) testes para os cenários
+> planejados — sem caixa aberto, saldo insuficiente, saída convertida para
+> negativo, sangria e suprimento com observação vazia, falha do repository — e,
+> se o código não se comportar como o cenário sugere, explicar a divergência e
+> documentar o comportamento atual em vez de forçar o teste a passar; (3) revisar
+> cada teste contra o código-fonte; (4) sugerir casos adicionais sem implementar,
+> para eu escolher; (5) revisão final separando comportamento correto de possível
+> defeito. Não altere código de produção e não afirme que um teste passou sem
+> executar.
+
+O trabalho foi feito um passo por vez, com validação minha entre cada um antes de
+seguir para o próximo.
+
+### Passo 1 — Scaffold
+
+`src/test/java/net/originmobi/pdv/service/CaixaLancamentoServiceTest.java` com
+`MockitoJUnitRunner` (estrito), `@Mock` para `CaixaLancamentoRepository`,
+`@InjectMocks` para o service e helpers para montar `Caixa` aberto, `Caixa`
+fechado e `CaixaLancamento`.
+
+`UsuarioService` foi deliberadamente deixado de fora: é `@Autowired` na classe,
+mas o método `lancamento` nunca o usa. Validado com `mvn test-compile`.
+
+### Passo 2 — Cenários planejados
+
+8 testes. Três cenários divergiram do esperado e foram documentados como
+comportamento atual, sem alterar o código de produção:
+
+- O guard de "Nenhum caixa aberto" é **código morto**: as duas condições do `&&`
+  são mutuamente exclusivas. Na prática, uma ENTRADA sem caixa é salva
+  normalmente e um caixa já fechado também é aceito.
+- Uma SAÍDA sem caixa falha por acidente (`Optional.get()` sobre vazio), gerando
+  `RuntimeException` **sem mensagem**, e não "Nenhum caixa aberto".
+- "Saldo insuficiente" não lança exceção: retorna uma `String`, que o chamador
+  pode ignorar.
+
+### Passo 3 — Validação
+
+Revisão de cada teste contra o código. Duas limitações registradas:
+
+- O teste da saída sem caixa não consegue provar qual exceção ocorreu, porque o
+  `catch (Exception e)` descarta a causa original.
+- O `ArgumentCaptor` guarda a referência do objeto, não um snapshot — como o
+  service muta o próprio `CaixaLancamento`, ele prova que `save` foi chamado, mas
+  não isola o estado.
+
+### Passo 4 — Cobertura de lacunas
+
+A IA levantou 16 casos possíveis e não implementou nenhum por conta própria.
+Escolhi 8 (os de regra de negócio e observação, mais um de efeito colateral) e
+descartei os de `NullPointerException`, que eram repetitivos.
+
+Total: **16 testes**.
+
+### Passo 5 — Validação final
+
+**Confirmado correto:** saldo insuficiente não persiste; saída positiva vira
+negativa; observações padrão de sangria e suprimento; observação preenchida é
+preservada; falha do repository vira a mensagem de suporte; limite `>` estrito
+(valor igual ao saldo passa, um centavo acima é recusado).
+
+**Possíveis defeitos documentados por teste (não corrigidos):**
+
+- Valor negativo em SAÍDA fura a validação de saldo (`-200 > 100` é falso) e
+  deixa o caixa negativo.
+- ENTRADA não tem validação nenhuma — um suprimento negativo reduz o caixa.
+- O guard de caixa aberto é código morto.
+- `data_cadastro` é preenchida antes das validações, mutando o objeto mesmo em
+  operação recusada.
+- `isEmpty()` em vez de `trim().isEmpty()`: observação só com espaços não recebe
+  o texto padrão.
+- Tipos fora de SANGRIA/SUPRIMENTO fazem `setObservacao("")`, que não muda nada.
+- `dataHoraAtual` é campo de instância num `@Service` singleton (estado mutável
+  compartilhado).
+
+Esses achados são candidatos a issues de bug.
+
+**Não coberto:** `@Transactional`/rollback e a validação `@Size(250)` da
+observação exigiriam teste de integração; a concorrência no `dataHoraAtual` é
+risco por leitura de código, sem teste determinístico.
+
+**Execução**
+
+Diferente das entradas 2 e 3, os testes **foram executados**:
+`mvn -o test -Dtest=CaixaLancamentoServiceTest` → **16 testes, 0 falhas, 0 erros**.
+Os testes que documentam defeitos passam justamente por reproduzirem o defeito.
+
+**Limitações da IA / observações**
+
+A suíte completa (`mvn test`) falha em `PdvApplicationTests`, mas por motivo
+alheio ao trabalho: o ambiente roda **JDK 21** e o projeto declara
+`<java.version>1.8</java.version>`, e o CGLIB do Spring 5.0.6 não sobe sob o
+sistema de módulos do JDK moderno. Confirmado que a falha reproduz com o arquivo
+de teste removido do projeto. Nenhum código de produção foi alterado.
