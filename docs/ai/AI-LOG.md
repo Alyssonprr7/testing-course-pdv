@@ -644,6 +644,15 @@ Sobre o Plano de Teste: a parte da minha responsabilidade já estava contemplada
 documento (escopo 1.1.1, papéis 1.3 e entregáveis), então não houve texto novo a
 acrescentar.
 
+Sobre o Documento de Escopo (escrito pelo Daniel): recebido depois da auditoria e
+conferido contra o código. A minha funcionalidade está descrita corretamente — a
+tabela da Seção 3 traz "Caixa / Sangria / suprimento / CaixaLancamentoService /
+lancamento"; a Seção 3.1 descreve os botões "Suprimento" e "Retirada" delegando ao
+método com estilo ENTRADA ou SAIDA e as três regras (verificação de saldo, valor
+gravado como negativo e observação padrão quando vazia); e a Observação 3 registra
+que os totais do caixa são atualizados por trigger, efeito só observável nos testes
+manuais. Nenhuma correção foi necessária na minha parte.
+
 **Limitações da IA / observações**
 
 Dois pontos do Plano de Teste continuam divergentes do repositório e não foram
