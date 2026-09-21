@@ -19,6 +19,7 @@ Sistema de ERP web desenvolvido em Java com Spring Framework
 
 # Artefatos do trabalho
 - `docs/ai/AI-LOG.md`: registro dos usos de IA
+- `docs/casos-de-teste/`: casos de teste manual, um arquivo por integrante
 - `docs/evidencias/`: evidências de execução, uma pasta por integrante
 - `src/test/java/`: testes unitários
 

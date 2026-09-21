@@ -1,0 +1,12 @@
+# Estado do banco DEPOIS da execucao dos casos CT-BRU-MAN-001 a 004
+# Gerado em: 20/09/2026 20:19:25
+
+## caixa
+codigo	Descricao	valor_abertura	valor_total	valor_entrada	valor_saida	data_fechamento
+1	Caixa para testes de sangria e suprimento	100	80	130	50	NULL
+
+## caixa_lancamento
+codigo	observacao	valor	tipo	estilo	caixa_codigo	data_cadastro
+1	Abertura de caixa	100	SALDOINICIAL	ENTRADA	1	2026-09-20 22:27:19
+2	sangria teste	-50	SANGRIA	SAIDA	1	2026-09-20 23:12:40
+3	suprimento teste	30	SUPRIMENTO	ENTRADA	1	2026-09-20 23:14:04

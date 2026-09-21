@@ -1,0 +1,24 @@
+{
+  "id": "RC-03",
+  "dialogs": [
+    "Recebimento realizado com sucesso"
+  ],
+  "passos": [
+    "Login como gerente (URL após login: http://localhost:4445/)",
+    "Conferido na tela Caixa que há caixa aberto",
+    "Tela Receber: cliente \"João Rafael Mendes Nogueira\" selecionado e Buscar; parcelas em aberto listadas",
+    "Marcada a parcela 7 (R$ 100,00)",
+    "Tela Recebimento aberta (http://localhost:4445/recebimento/3)",
+    "Preenchido: Título=Dinheiro; Desc=10,00; Acres=(vazio); Valor Recebido=R$ 90,00",
+    "Clicado em Receber. Alert: [\"Recebimento realizado com sucesso\"]",
+    "Conferidas as listas de parcelas pagas e em aberto"
+  ],
+  "recebimentoUrl": "http://localhost:4445/recebimento/3",
+  "campos": {
+    "titulo": "Dinheiro",
+    "total": "100,00",
+    "desconto": "10,00",
+    "acrescimo": "",
+    "vlrecebido": "R$ 90,00"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "id": "RC-01",
+  "recebimentoUrl": "http://localhost:4445/recebimento/1",
+  "campos": {
+    "titulo": "Dinheiro",
+    "total": "100,00",
+    "desconto": "",
+    "acrescimo": "",
+    "vlrecebido": "R$ 100,00"
+  },
+  "dialogs": [
+    "Recebimento realizado com sucesso"
+  ],
+  "nota": "Prints 08 e 09 e db-depois.txt capturados em segunda sessão do navegador (a 1ª sessão terminou com erro do script, não do sistema, ao conferir a lista de pagos)."
+}
