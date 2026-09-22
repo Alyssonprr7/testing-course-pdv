@@ -28,3 +28,4 @@ target/
 # IntelliJ IDEA
 .idea/
 *.iml
+/bin/

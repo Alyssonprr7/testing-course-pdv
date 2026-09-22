@@ -19,6 +19,7 @@ Sistema de ERP web desenvolvido em Java com Spring Framework
 
 # Artefatos do trabalho
 - `docs/ai/AI-LOG.md`: registro dos usos de IA
+- `docs/casos-de-teste/`: casos de teste manual, um arquivo por integrante
 - `docs/evidencias/`: evidências de execução, uma pasta por integrante
 - `src/test/java/`: testes unitários
 
@@ -61,3 +62,10 @@ Com o Maven instalado, na raiz do projeto:
 ```sh
 mvn test
 ```
+
+O projeto tem como alvo o Java 8. Quando o build roda em JDK 9 ou superior, um
+profile do `pom.xml` (`jdk9-plus-tests`) é ativado automaticamente para liberar o
+acesso reflexivo que o Spring 5.0.6 precisa e para excluir o `PdvApplicationTests`,
+que sobe o contexto completo e não funciona nessas versões — o Hibernate 5.2 trazido
+pelo Spring Boot 2.0.2 não processa bytecode de Java 9+. Os testes unitários de regra
+de negócio não dependem do contexto e rodam em qualquer versão.

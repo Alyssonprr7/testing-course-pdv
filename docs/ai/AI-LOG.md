@@ -357,3 +357,311 @@ resultado dessa conferência.
 O Gemini trabalha só com o texto do briefing e não tem acesso ao repositório, então
 pode preencher lacunas por conta própria. O briefing pede explicitamente que não
 invente números, datas ou resultados, mas a conferência humana continua necessária.
+
+---
+
+## 6. Testes unitários de `CaixaLancamentoService.lancamento`
+
+- **Data:** 20/09/2026
+- **Responsável:** Bruno
+- **Ferramenta:** Claude (Claude Code)
+
+**Objetivo**
+
+Criar a suíte de testes unitários do método `lancamento` da classe
+`CaixaLancamentoService` (JUnit 4 + Mockito), seguindo o mesmo fluxo em cinco
+passos das entradas 2 e 3: scaffold, cenários planejados, validação, cobertura de
+lacunas e validação final.
+
+**Prompt utilizado (melhorado para clareza)**
+
+> Quero criar os testes unitários do método `lancamento` da classe
+> `CaixaLancamentoService`. Use o código real do repositório como fonte e não
+> invente comportamentos que não estejam implementados. O projeto usa Java 8,
+> Spring Boot 2.0.2, JUnit 4 e Mockito. Siga cinco passos: (1) scaffold apenas,
+> com os mocks e helpers realmente necessários; (2) testes para os cenários
+> planejados — sem caixa aberto, saldo insuficiente, saída convertida para
+> negativo, sangria e suprimento com observação vazia, falha do repository — e,
+> se o código não se comportar como o cenário sugere, explicar a divergência e
+> documentar o comportamento atual em vez de forçar o teste a passar; (3) revisar
+> cada teste contra o código-fonte; (4) sugerir casos adicionais sem implementar,
+> para eu escolher; (5) revisão final separando comportamento correto de possível
+> defeito. Não altere código de produção e não afirme que um teste passou sem
+> executar.
+
+O trabalho foi feito um passo por vez, com validação minha entre cada um antes de
+seguir para o próximo.
+
+### Passo 1 — Scaffold
+
+`src/test/java/net/originmobi/pdv/service/CaixaLancamentoServiceTest.java` com
+`MockitoJUnitRunner` (estrito), `@Mock` para `CaixaLancamentoRepository`,
+`@InjectMocks` para o service e helpers para montar `Caixa` aberto, `Caixa`
+fechado e `CaixaLancamento`.
+
+`UsuarioService` foi deliberadamente deixado de fora: é `@Autowired` na classe,
+mas o método `lancamento` nunca o usa. Validado com `mvn test-compile`.
+
+### Passo 2 — Cenários planejados
+
+8 testes. Três cenários divergiram do esperado e foram documentados como
+comportamento atual, sem alterar o código de produção:
+
+- O guard de "Nenhum caixa aberto" é **código morto**: as duas condições do `&&`
+  são mutuamente exclusivas. Na prática, uma ENTRADA sem caixa é salva
+  normalmente e um caixa já fechado também é aceito.
+- Uma SAÍDA sem caixa falha por acidente (`Optional.get()` sobre vazio), gerando
+  `RuntimeException` **sem mensagem**, e não "Nenhum caixa aberto".
+- "Saldo insuficiente" não lança exceção: retorna uma `String`, que o chamador
+  pode ignorar.
+
+### Passo 3 — Validação
+
+Revisão de cada teste contra o código. Duas limitações registradas:
+
+- O teste da saída sem caixa não consegue provar qual exceção ocorreu, porque o
+  `catch (Exception e)` descarta a causa original.
+- O `ArgumentCaptor` guarda a referência do objeto, não um snapshot — como o
+  service muta o próprio `CaixaLancamento`, ele prova que `save` foi chamado, mas
+  não isola o estado.
+
+### Passo 4 — Cobertura de lacunas
+
+A IA levantou 16 casos possíveis e não implementou nenhum por conta própria.
+Escolhi 8 (os de regra de negócio e observação, mais um de efeito colateral) e
+descartei os de `NullPointerException`, que eram repetitivos.
+
+Total: **16 testes**.
+
+### Passo 5 — Validação final
+
+**Confirmado correto:** saldo insuficiente não persiste; saída positiva vira
+negativa; observações padrão de sangria e suprimento; observação preenchida é
+preservada; falha do repository vira a mensagem de suporte; limite `>` estrito
+(valor igual ao saldo passa, um centavo acima é recusado).
+
+**Possíveis defeitos documentados por teste (não corrigidos):**
+
+- Valor negativo em SAÍDA fura a validação de saldo (`-200 > 100` é falso) e
+  deixa o caixa negativo.
+- ENTRADA não tem validação nenhuma — um suprimento negativo reduz o caixa.
+- O guard de caixa aberto é código morto.
+- `data_cadastro` é preenchida antes das validações, mutando o objeto mesmo em
+  operação recusada.
+- `isEmpty()` em vez de `trim().isEmpty()`: observação só com espaços não recebe
+  o texto padrão.
+- Tipos fora de SANGRIA/SUPRIMENTO fazem `setObservacao("")`, que não muda nada.
+- `dataHoraAtual` é campo de instância num `@Service` singleton (estado mutável
+  compartilhado).
+
+Esses achados são candidatos a issues de bug.
+
+**Não coberto:** `@Transactional`/rollback e a validação `@Size(250)` da
+observação exigiriam teste de integração; a concorrência no `dataHoraAtual` é
+risco por leitura de código, sem teste determinístico.
+
+**Execução**
+
+Diferente das entradas 2 e 3, os testes **foram executados**:
+`mvn -o test -Dtest=CaixaLancamentoServiceTest` → **16 testes, 0 falhas, 0 erros**.
+Os testes que documentam defeitos passam justamente por reproduzirem o defeito.
+
+**Limitações da IA / observações**
+
+A suíte completa (`mvn test`) falha em `PdvApplicationTests`, mas por motivo
+alheio ao trabalho: o ambiente roda **JDK 21** e o projeto declara
+`<java.version>1.8</java.version>`, e o CGLIB do Spring 5.0.6 não sobe sob o
+sistema de módulos do JDK moderno. Confirmado que a falha reproduz com o arquivo
+de teste removido do projeto. Nenhum código de produção foi alterado.
+
+---
+
+## 7. Casos de teste manual de Sangria / Suprimento
+
+- **Data:** 20/09/2026
+- **Responsável:** Bruno
+- **Ferramenta:** Claude (Claude Code)
+
+**Objetivo**
+
+Projetar os casos de teste manual da funcionalidade "Sangria / suprimento de
+caixa", com os quatro cenários mínimos previstos na divisão da equipe: sangria
+com caixa aberto, suprimento com caixa aberto, sangria maior que o saldo e
+conferência do extrato do caixa.
+
+**Prompt utilizado (melhorado para clareza)**
+
+> Analise o sistema real e crie os casos de teste manual da funcionalidade
+> Sangria / Suprimento. Para cada cenário, gere um caso contendo ID,
+> funcionalidade, pré-condição, passos, ação/entrada, resultado esperado,
+> resultado obtido e status. Não invente comportamento esperado: confirme os
+> fluxos pela interface e pelo código. Use os IDs CT-BRU-MAN-001 a
+> CT-BRU-MAN-004 e salve em local adequado dentro de `docs/`.
+
+**Resultado**
+
+`docs/casos-de-teste/bruno-sangria-suprimento.md` com os quatro casos.
+
+Antes de escrever os resultados esperados, a IA levantou no código quatro pontos
+que mudariam o texto dos casos se fossem assumidos por suposição:
+
+- O botão da sangria na interface tem o rótulo **"Retirada"** (não "Sangria"), e
+  o modal se chama "Retirada de Caixa".
+- O retorno do servidor é mostrado em um **alert** do navegador, com o texto que o
+  service devolve (`caixa.js`).
+- O saldo do caixa **não** é atualizado pelo código Java: quem atualiza é o
+  trigger de banco `tr_atualizaValoresCaixa_AFTER_INSERT`, disparado no insert do
+  lançamento (`V1__cria_estrutura_inicial.sql`).
+- Na saída o valor é gravado negativo, então o extrato exibe o valor com sinal
+  negativo e a linha em vermelho.
+
+**Validação**
+
+Os quatro pontos acima foram conferidos por mim nos arquivos citados antes de
+fechar os casos. Os campos **Resultado obtido** e **Status** foram deixados
+explicitamente como "a preencher" / "não executado", porque nenhum caso manual
+havia sido executado no momento em que o documento foi criado.
+
+**Limitações da IA / observações**
+
+A IA não tem navegador nem como capturar tela, então não executa os casos manuais
+nem produz as evidências. A execução e os prints em `docs/evidencias/bruno/` são
+feitos por mim.
+
+---
+
+## 8. Execução dos testes manuais de Sangria / Suprimento
+
+- **Data:** 20/09/2026
+- **Responsável:** Bruno
+- **Ferramenta:** Claude (Claude Code)
+
+**Objetivo**
+
+Subir o ambiente, executar os quatro casos manuais de Sangria / Suprimento e
+registrar resultado obtido, status e evidências.
+
+**Prompt utilizado (melhorado para clareza)**
+
+> Verifique a configuração do projeto e suba o sistema da forma prevista (Docker).
+> Confirme aplicação, banco, login e acesso ao fluxo de sangria/suprimento. Depois
+> me oriente na execução dos quatro casos e atualize os documentos com resultado
+> obtido, status e referência à evidência. Não declare um teste como "passou" sem
+> ele ter sido realmente executado.
+
+**Resultado**
+
+Ambiente subido com `docker compose up -d` e verificado: banco `pdv-db` healthy com
+as 2 migrations do Flyway aplicadas, aplicação no ar na porta 8080, login
+`gerente` / `123` autenticando e tela de caixa acessível.
+
+A IA preparou a pré-condição criando um caixa do tipo CAIXA com saldo de
+R$ 100,00 e capturou o estado do banco antes da execução
+(`docs/evidencias/bruno/db-antes.txt`).
+
+A execução na interface foi feita por mim. Resultado dos quatro casos:
+
+| Caso | Cenário | Status |
+|---|---|---|
+| CT-BRU-MAN-001 | Sangria de R$ 50,00 com saldo suficiente | PASSOU |
+| CT-BRU-MAN-002 | Suprimento de R$ 30,00 | PASSOU |
+| CT-BRU-MAN-003 | Sangria de R$ 500,00 com saldo de R$ 80,00 | PASSOU |
+| CT-BRU-MAN-004 | Conferência do extrato e dos saldos | PASSOU |
+
+Evidências em `docs/evidencias/bruno/`, mais o estado do banco depois da execução
+(`db-depois.txt`).
+
+**Ajustes feitos durante a etapa**
+
+O roteiro inicial descrevia o caminho de navegação de forma incompleta: dizia
+apenas "menu Caixa", quando o menu se chama **"Caixa / Cofre"** e os botões
+Suprimento / Retirada só existem dentro da tela **Gerenciar Caixa**, não na lista.
+O documento de casos foi corrigido.
+
+Durante a investigação, a IA também afirmou incorretamente que o usuário `gerente`
+estava sem permissões, por ter consultado a tabela `permissao` em vez de
+`permissoes`. A consulta correta mostra 51 permissões vinculadas ao grupo
+ADMINISTRADOR, incluindo `CAIXA_SANGRIA` e `CAIXA_SUPRIMENTO`. O erro foi
+corrigido antes de qualquer conclusão entrar nos documentos.
+
+**Validação**
+
+Os quatro resultados foram conferidos em duas fontes independentes: os prints da
+interface e o estado do banco. O banco confirma o comportamento esperado —
+`caixa_lancamento` ficou com 3 registros (a tentativa de R$ 500,00 não foi
+persistida) e o caixa ficou com `valor_total` 80, `valor_entrada` 130 e
+`valor_saida` 50.
+
+**Limitações da IA / observações**
+
+A IA não executou nenhum caso pela interface nem capturou prints — não tem
+navegador. A execução e as evidências são minhas; a IA preparou o ambiente,
+conferiu o banco e preencheu os documentos a partir do que foi observado.
+
+---
+
+## 9. Auditoria final da parte de Sangria / Suprimento
+
+- **Data:** 20/09/2026
+- **Responsável:** Bruno
+- **Ferramenta:** Claude (Claude Code)
+
+**Objetivo**
+
+Revisar tudo o que é da minha responsabilidade antes da entrega e produzir um
+checklist do que está pronto e do que ficou pendente.
+
+**Prompt utilizado (melhorado para clareza)**
+
+> Faça uma auditoria apenas da minha responsabilidade: classe de teste, testes
+> unitários e sua execução, casos manuais, resultados, evidências, issues,
+> contribuição no Plano de Teste e no Escopo, entradas no AI-LOG e referências no
+> README. Verifique se tudo está na branch de entrega e gere um checklist com
+> OK / PENDENTE / NÃO SE APLICA.
+
+**Resultado**
+
+A suíte foi reexecutada durante a auditoria (`mvn -o test -Dtest=CaixaLancamentoServiceTest`):
+16 testes, 0 falhas, BUILD SUCCESS. Os 4 casos manuais estão com resultado obtido
+e status preenchidos, sem pendências.
+
+Duas lacunas foram encontradas e corrigidas:
+
+- O arquivo `db-antes.txt` havia sido gerado mas não chegou a ser versionado, e
+  não estava mais no disco. Foi regravado a partir da saída capturada no momento
+  original (20/09/2026 20:01:50), com essa observação registrada no próprio
+  arquivo.
+- O `README.md` não citava a pasta `docs/casos-de-teste/`. A referência foi
+  adicionada.
+
+**Validação**
+
+Conferido que a branch de entrega é a `master` (o repositório não tem `main`,
+apesar de o Plano de Teste citar esse nome) e que tudo está sincronizado com o
+remoto.
+
+Sobre o Plano de Teste: a parte da minha responsabilidade já estava contemplada no
+documento (escopo 1.1.1, papéis 1.3 e entregáveis), então não houve texto novo a
+acrescentar.
+
+Sobre o Documento de Escopo (escrito pelo Daniel): recebido depois da auditoria e
+conferido contra o código. A minha funcionalidade está descrita corretamente — a
+tabela da Seção 3 traz "Caixa / Sangria / suprimento / CaixaLancamentoService /
+lancamento"; a Seção 3.1 descreve os botões "Suprimento" e "Retirada" delegando ao
+método com estilo ENTRADA ou SAIDA e as três regras (verificação de saldo, valor
+gravado como negativo e observação padrão quando vazia); e a Observação 3 registra
+que os totais do caixa são atualizados por trigger, efeito só observável nos testes
+manuais. Nenhuma correção foi necessária na minha parte.
+
+**Limitações da IA / observações**
+
+Dois pontos do Plano de Teste continuam divergentes do repositório e não foram
+alterados por serem de seções compartilhadas: o documento cita JUnit 5, mas o
+projeto usa JUnit 4.12; e cita `./mvnw test`, que não funciona no projeto (o
+comando que funciona é `mvn test`).
+
+Também fica registrado que `mvn test` executando a suíte completa termina em
+BUILD FAILURE por causa de `PdvApplicationTests`, que falha ao subir o contexto
+Spring quando o ambiente roda JDK 21 enquanto o projeto declara Java 8. É um
+problema pré-existente, alheio a esta parte do trabalho, e reproduz mesmo com o
+arquivo `CaixaLancamentoServiceTest.java` removido do projeto.

@@ -1,0 +1,15 @@
+# parcela
+codigo	receber_codigo	valor_total	valor_desconto	valor_acrescimo	valor_recebido	valor_restante	quitado	data_pagamento
+5	2	100	0	0	0	100	0	NULL
+
+# recebimentos (todos)
+
+# recebimento_parcelas
+
+# caixa_lancamento (todos)
+codigo	tipo	estilo	valor	observacao	recebimento_codigo
+1	SALDOINICIAL	ENTRADA	100	Abertura de caixa	NULL
+
+# caixa
+codigo	valor_abertura	valor_total	valor_entrada	data_fechamento
+1	100	100	100	NULL

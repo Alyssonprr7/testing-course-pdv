@@ -1,0 +1,32 @@
+{
+  "id": "RC-05",
+  "dialogs": [
+    "Recebimento já esta fechado"
+  ],
+  "passos": [],
+  "parcela5NaListaDeAbertos": 0,
+  "parcela5ComCheckboxNaListaDePagos": 0,
+  "camposDesabilitados": [
+    [
+      "#titulo",
+      true
+    ],
+    [
+      "#desc",
+      true
+    ],
+    [
+      "#acres",
+      true
+    ],
+    [
+      "#vlrecebido",
+      true
+    ]
+  ],
+  "botaoReceberVisivel": true,
+  "urlDireta": {
+    "status": 500,
+    "corpo": "Whitelabel Error Page\n\nThis application has no explicit mapping for /error, so you are seeing this as a fallback.\n\nSun Sep 20 20:36:03 UTC 2026\nThere was an unexpected error (type=Internal Server Error, status=500).\nParcela 5 já esta quitada, verifique."
+  }
+}
