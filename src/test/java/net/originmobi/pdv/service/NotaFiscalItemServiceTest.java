@@ -64,6 +64,10 @@ import net.originmobi.pdv.service.notafiscal.NotaFiscalTotaisServer;
 @RunWith(MockitoJUnitRunner.Silent.class)
 public class NotaFiscalItemServiceTest {
 
+	public NotaFiscalItemServiceTest() {
+		super();
+	}
+
 	private static final Long COD_PROD = 1L;
 	private static final Long COD_NOTA = 10L;
 	private static final Double VALOR_VENDA = 10.0;
