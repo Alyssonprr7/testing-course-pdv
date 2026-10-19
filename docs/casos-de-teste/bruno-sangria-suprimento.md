@@ -58,7 +58,7 @@ Levantado no código antes de escrever os casos, para não inventar resultado es
 |---|---|
 | **Resultado obtido** | Alert exibido: `Lançamento realizado com sucesso`. Linha 2 criada na tabela Lançamentos com Descrição `sangria teste`, Valor `R$ -50,00`, E/S `SAIDA`, em vermelho. Saldo Total passou de R$ 100,00 para R$ 50,00. |
 | **Status** | **PASSOU** |
-| **Evidência** | `CT-BRU-MAN-001.png` |
+| **Evidência** | `CT-BRU-MAN-001 - sangria.png` |
 
 ---
 
@@ -89,7 +89,7 @@ Levantado no código antes de escrever os casos, para não inventar resultado es
 |---|---|
 | **Resultado obtido** | Alert exibido: `Lançamento realizado com sucesso`. Linha 3 criada com Descrição `suprimento teste`, Valor `R$ 30,00`, E/S `ENTRADA`, em verde. Saldo Total passou de R$ 50,00 para R$ 80,00. |
 | **Status** | **PASSOU** |
-| **Evidência** | `CT-BRU-MAN-002.png` |
+| **Evidência** | `CT-BRU-MAN-002 - suprimento.png` |
 
 ---
 
@@ -118,7 +118,7 @@ Levantado no código antes de escrever os casos, para não inventar resultado es
 |---|---|
 | **Resultado obtido** | Alert exibido: `Saldo insuficiente para realizar esta operação`. Nenhuma linha nova na tabela. Saldo Total permaneceu R$ 80,00. Confirmado no banco: a tabela `caixa_lancamento` continua com 3 registros. |
 | **Status** | **PASSOU** |
-| **Evidência** | `CT-BRU-MAN-003.png` |
+| **Evidência** | `CT-BRU-MAN-003 - saldo insuficiente.png` |
 
 ---
 
@@ -146,4 +146,4 @@ Levantado no código antes de escrever os casos, para não inventar resultado es
 |---|---|
 | **Resultado obtido** | Tabela lista os 3 lançamentos (abertura R$ 100,00 / sangria R$ -50,00 / suprimento R$ 30,00). A tentativa de R$ 500,00 não aparece. Totais exibidos: Entrada R$ 130,00, Saída R$ 50,00, Saldo Total R$ 80,00. |
 | **Status** | **PASSOU** |
-| **Evidência** | `CT-BRU-MAN-004.png` |
+| **Evidência** | `CT-BRU-MAN-004 - extrato.png` |
