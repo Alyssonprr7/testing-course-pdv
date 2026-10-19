@@ -59,7 +59,7 @@ public class CaixaService {
 			descricao = caixa.getDescricao().isEmpty() ? "Caixa diário" : caixa.getDescricao();
 		else if (caixa.getTipo().equals(CaixaTipo.COFRE))
 			descricao = caixa.getDescricao().isEmpty() ? "Cofre" : caixa.getDescricao();
-		else if (caixa.getTipo().equals(CaixaTipo.BANCO))
+		else
 			descricao = caixa.getDescricao().isEmpty() ? "Banco" : caixa.getDescricao();
 
 		LocalDate dataAtual = LocalDate.now();
@@ -70,8 +70,6 @@ public class CaixaService {
 
 		// se for BANCO, limpa os valores especiais de agencia e conta
 		if (caixa.getTipo().equals(CaixaTipo.BANCO)) {
-			System.out.println("agencia " + caixa.getAgencia());
-			System.out.println("conta " + caixa.getConta());
 			caixa.setAgencia(caixa.getAgencia().replaceAll("\\D", ""));
 			caixa.setConta(caixa.getConta().replaceAll("\\D", ""));
 		}
