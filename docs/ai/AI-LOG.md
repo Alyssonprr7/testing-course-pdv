@@ -782,11 +782,16 @@ A configuração foi feita pelo Claude Code; as decisões abaixo foram tomadas e
   `junit-vintage-engine`, e o Surefire foi atualizado para 3.2.5. Antes disso o Surefire
   do Spring Boot 2.0 (JUnit 4) **não executava o `VendaServiceTest`**, que é JUnit 5. Com
   o Vintage, os testes JUnit 4 continuam rodando junto.
-- **PIT 1.15.8 + `pitest-junit5-plugin` 1.2.1:** alvo nas quatro classes testadas pelo
-  grupo (`CaixaService`, `CaixaLancamentoService`, `RecebimentoService`, `VendaService`)
-  com as respectivas suítes, mutadores `DEFAULTS`, relatórios HTML e XML em
+- **PIT 1.15.8 + `pitest-junit5-plugin` 1.2.1:** alvo nas cinco classes testadas pelo
+  grupo (`CaixaService`, `CaixaLancamentoService`, `RecebimentoService`, `VendaService`,
+  `NotaFiscalItemService`) com as respectivas suítes, mutadores `DEFAULTS`, relatórios HTML e XML em
   `target/pit-reports`. Começou só com a `CaixaService` e foi ampliado a pedido, para
-  que todos do grupo usem a mesma configuração.
+  que todos do grupo usem a mesma configuração. A `NotaFiscalItemService` entrou depois
+  do merge que trouxe o `NotaFiscalItemServiceTest`.
+- **`skipFailingTests` no PIT:** o `NotaFiscalItemServiceTest` tem 3 testes que falham de
+  propósito (UT-NFI-12 a 14, revelam o `get()` em `Optional` vazio). Sem essa opção o PIT
+  aborta, porque exige a suíte verde antes de mutar. Com ela, só esses 3 testes ficam fora
+  da análise de mutação; no `mvn test` eles continuam falhando e aparecendo.
   Comando: `mvn test-compile org.pitest:pitest-maven:mutationCoverage`.
 - **Selenium 3.141.59** (escopo `test`), com `okhttp3.version` em 3.11.0, porque o
   Spring Boot 2.0 gerencia o okhttp na 3.9.1, mais antiga do que o Selenium 3.141 exige.
@@ -803,11 +808,15 @@ A configuração foi feita pelo Claude Code; as decisões abaixo foram tomadas e
 
 **Execução** (Maven 3.9.9, JDK 17)
 
-`mvn clean test`: **125 de 126 testes passam**. O `VendaServiceTest` agora roda pelo
-Surefire (6 testes). O único erro é o `PdvApplicationTests.contextLoads`, que **já
-existia e não tem relação com esta configuração**: o Spring 5.0 não consegue subir o
-contexto no Java 17 (`InaccessibleObjectException` no cglib), e o teste ainda dependeria
-do MySQL.
+Primeira execução, `mvn clean test`: **125 de 126 testes passam**. O `VendaServiceTest`
+agora roda pelo Surefire (6 testes). O único erro foi o `PdvApplicationTests.contextLoads`,
+que **já existia e não tem relação com esta configuração**: o Spring 5.0 não consegue subir
+o contexto no Java 17 (`InaccessibleObjectException` no cglib).
+
+Reexecução após o merge (o merge trouxe o profile `jdk9-plus-tests`, que exclui o
+`PdvApplicationTests` em JDK 9+, o H2 para testes e o `NotaFiscalItemServiceTest`):
+**148 testes, 145 passam, 3 falham**. As 3 falhas são as intencionais do
+`NotaFiscalItemServiceTest` (UT-NFI-12 a 14).
 
 Cobertura do `CaixaService` (JaCoCo, `target/site/jacoco`):
 
@@ -817,6 +826,15 @@ Cobertura do `CaixaService` (JaCoCo, `target/site/jacoco`):
 | Branches | 43 | 44 | 97,7% |
 | Linhas | 80 | 80 | 100% |
 | Métodos | 13 | 13 | 100% |
+
+Cobertura das demais classes testadas (reexecução após o merge):
+
+| Classe | Linhas | Branches |
+|---|---|---|
+| `CaixaLancamentoService` | 31/33 (94%) | 19/22 (86%) |
+| `RecebimentoService` | 57/91 (63%) | 22/34 (65%) |
+| `VendaService` | 51/126 (40%) | 20/38 (53%) |
+| `NotaFiscalItemService` | 69/79 (87%) | 40/40 (100%) |
 
 O branch não coberto está na linha 62 de `cadastro`: o caso em que o tipo não é
 `CAIXA`, `COFRE` nem `BANCO` (o `else if (BANCO)` falso), que não acontece com o enum
@@ -837,7 +855,7 @@ Os 2 sobreviventes são as remoções dos `System.out.println` de agência e con
 o resultado, então nenhum teste consegue detectá-los. A recomendação é remover os prints
 do código, não escrever testes para eles.
 
-Mutação das quatro classes, na execução ampliada (mesma data):
+Mutação das cinco classes, na reexecução após o merge (mesma data):
 
 | Classe | Gerados | Mortos | Sobreviventes | Sem cobertura | Score | Test strength |
 |---|---|---|---|---|---|---|
@@ -845,7 +863,8 @@ Mutação das quatro classes, na execução ampliada (mesma data):
 | `CaixaLancamentoService` | 19 | 15 | 3 | 1 | 79% | 83% |
 | `RecebimentoService` | 39 | 24 | 4 | 11 | 62% | 86% |
 | `VendaService` | 66 | 17 | 16 | 33 | 26% | 52% |
-| **Total** | **178** | **108** | **25** | **45** | **61%** | **81%** |
+| `NotaFiscalItemService` | 37 | 30 | 3 | 4 | 81% | 91% |
+| **Total** | **215** | **138** | **28** | **49** | **64%** | **83%** |
 
 O score considera todos os mutantes; o test strength desconsidera os que caem em linhas
 sem cobertura. Os sobreviventes e os sem cobertura das outras três classes ficam para
@@ -862,5 +881,7 @@ análise de cada responsável, no relatório `target/pit-reports/index.html`.
 
 **Limitações da IA / observações**
 
+- Os números da `NotaFiscalItemService` não contam os 3 testes intencionalmente falhos
+  (excluídos pelo `skipFailingTests`).
 - Os números acima valem para a execução de 19/10/2026 no JDK 17. Quem rodar no Java 8
   (Docker) deve obter o mesmo resultado nos testes unitários, mas isso não foi verificado.
