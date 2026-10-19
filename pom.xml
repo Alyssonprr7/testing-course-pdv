@@ -33,6 +33,10 @@
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<java.version>1.8</java.version>
 		<byte-buddy.version>1.14.9</byte-buddy.version>
+		<junit-jupiter.version>5.10.2</junit-jupiter.version>
+		<selenium.version>3.141.59</selenium.version>
+		<!-- Selenium 3.141.59 exige okhttp 3.11 (o Spring Boot 2.0 gerencia 3.9.1) -->
+		<okhttp3.version>3.11.0</okhttp3.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -110,6 +114,26 @@
 		    <version>2.23.4</version>
 		    <scope>test</scope>
 		</dependency>
+		<!-- JUnit 5 (Jupiter) + Vintage para executar também os testes JUnit 4 -->
+		<dependency>
+		    <groupId>org.junit.jupiter</groupId>
+		    <artifactId>junit-jupiter-engine</artifactId>
+		    <version>${junit-jupiter.version}</version>
+		    <scope>test</scope>
+		</dependency>
+		<dependency>
+		    <groupId>org.junit.vintage</groupId>
+		    <artifactId>junit-vintage-engine</artifactId>
+		    <version>${junit-jupiter.version}</version>
+		    <scope>test</scope>
+		</dependency>
+		<!-- Selenium para testes de sistema (end-to-end) -->
+		<dependency>
+		    <groupId>org.seleniumhq.selenium</groupId>
+		    <artifactId>selenium-java</artifactId>
+		    <version>${selenium.version}</version>
+		    <scope>test</scope>
+		</dependency>
  </dependencies>
 
 	<build>
@@ -117,6 +141,12 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>3.2.5</version>
 			</plugin>
 
 			<plugin>
@@ -137,6 +167,43 @@
 						</goals>
 					</execution>
 				</executions>
+			</plugin>
+
+			<!-- Testes de mutação: mvn test-compile org.pitest:pitest-maven:mutationCoverage -->
+			<plugin>
+				<groupId>org.pitest</groupId>
+				<artifactId>pitest-maven</artifactId>
+				<version>1.15.8</version>
+				<dependencies>
+					<dependency>
+						<groupId>org.pitest</groupId>
+						<artifactId>pitest-junit5-plugin</artifactId>
+						<version>1.2.1</version>
+					</dependency>
+				</dependencies>
+				<configuration>
+					<!-- Classes testadas pelo grupo e suas respectivas suítes -->
+					<targetClasses>
+						<param>net.originmobi.pdv.service.CaixaService</param>
+						<param>net.originmobi.pdv.service.CaixaLancamentoService</param>
+						<param>net.originmobi.pdv.service.RecebimentoService</param>
+						<param>net.originmobi.pdv.service.VendaService</param>
+					</targetClasses>
+					<targetTests>
+						<param>net.originmobi.pdv.service.CaixaServiceTest</param>
+						<param>net.originmobi.pdv.service.CaixaLancamentoServiceTest</param>
+						<param>net.originmobi.pdv.service.RecebimentoServiceTest</param>
+						<param>net.originmobi.pdv.service.VendaServiceTest</param>
+					</targetTests>
+					<mutators>
+						<mutator>DEFAULTS</mutator>
+					</mutators>
+					<outputFormats>
+						<outputFormat>HTML</outputFormat>
+						<outputFormat>XML</outputFormat>
+					</outputFormats>
+					<timestampedReports>false</timestampedReports>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>
