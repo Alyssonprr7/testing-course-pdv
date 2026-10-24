@@ -6,6 +6,9 @@ services:
       - "5005:5005"
     volumes:
       - .:/app
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://pdv-db:3306/pdv?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_PASSWORD: "123456"
     depends_on:
       pdv-db:
         condition: service_healthy

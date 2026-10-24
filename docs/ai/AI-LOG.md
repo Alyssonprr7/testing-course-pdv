@@ -885,3 +885,85 @@ análise de cada responsável, no relatório `target/pit-reports/index.html`.
   (excluídos pelo `skipFailingTests`).
 - Os números acima valem para a execução de 19/10/2026 no JDK 17. Quem rodar no Java 8
   (Docker) deve obter o mesmo resultado nos testes unitários, mas isso não foi verificado.
+
+---
+
+## 12. Testes de sistema (Selenium) da abertura e do fechamento de caixa
+
+- **Data:** 23/10/2026 e 24/10/2026
+- **Responsável:** Alysson
+- **Ferramenta:** Claude (Claude Code)
+
+**Objetivo**
+
+Criar os primeiros testes de sistema com Selenium para a funcionalidade de caixa
+(`CaixaService` pela interface web) e aplicar os critérios de particionamento em classes
+de equivalência e análise de valor limite. A interação foi conduzida em etapas: primeiro
+cenários definidos pelo responsável, depois cenários sugeridos pela IA a partir dos critérios.
+
+**Prompts utilizados (melhorados para clareza)**
+
+> 1. Vamos usar o Selenium para testar a parte do `CaixaService`: acessar
+>    `http://localhost:8080/caixa`, clicar em "Abrir caixa" e criar um caixa.
+> 2. Crie os cenários: caixa zerado, caixa com saldo negativo e caixa com
+>    2.000.000.000.000.000.
+> 3. Crie outros casos usando particionamento em classes de equivalência e análise de
+>    valor limite, uns 5, sobre campos variados.
+> 4. Crie as issues dos problemas encontrados para cadastrar no GitHub.
+
+**Etapa 1: cenários sugeridos pelo responsável**
+
+Alysson definiu os cenários iniciais (abrir um caixa; caixa zerado; caixa negativo; caixa com
+valor muito alto) e a IA implementou os testes em
+`src/test/java/net/originmobi/pdv/selenium/CaixaSeleniumTest.java`. Depois validou se
+os testes criados eram o que pretendia, executando a suíte e conferindo o fluxo na tela.
+Na revisão, renomeou os métodos de teste para inglês, e a IA seguiu esse padrão nas
+etapas seguintes.
+
+| Cenário | Entrada | Resultado |
+|---|---|---|
+| Abertura com valor | R$ 100,00 | Abre |
+| Caixa zerado | R$ 0,00 | Abre, saldo `0,00` |
+| Caixa negativo | R$ -10,00 | Recusado: "Valor informado é inválido" |
+| Valor muito alto | R$ 2.000.000.000.000.000,00 | Abre (não há limite máximo) |
+
+**Etapa 2: cenários sugeridos pela IA (classes de equivalência e valor limite)**
+
+Em seguida, pediu sugestões baseadas na quebra em classes e no valor limite. A IA leu as regras no
+código (`CaixaService.cadastro`, `CaixaService.fechaCaixa`,
+`CaixaLancamentoService.lancamento` e o `@Size(max = 250)` de `Caixa`) e sugeriu os casos
+abaixo. Alysson aceitou as sugestões, a IA implementou e o resultado foi validado em seguida.
+
+| Campo | Critério | Entradas | Resultado esperado |
+|---|---|---|---|
+| Valor de abertura | Valor limite (limite 0) | R$ -0,01 / R$ 0,01 | Recusa / abre com saldo `0,01` |
+| Observação | Classe "vazia" | "" | Abre com a descrição padrão "Caixa diário" |
+| Observação | Valor limite (máx. 250) | 250 / 251 caracteres | Abre / recusa |
+| Sangria | Valor limite (limite = saldo de R$ 100,00) | R$ 100,00 / R$ 100,01 | Sucesso / "Saldo insuficiente para realizar esta operação" |
+| Senha de fechamento | Classes de equivalência | vazia / incorreta / correta | "Favor, informe a senha" / "Senha incorreta, favor verifique" / fecha |
+
+Resultado: **12 testes, 12 passando**. Como o sistema só permite um caixa do tipo `CAIXA`
+aberto por vez, cada teste fecha o caixa que abriu (`@AfterEach`), e o banco foi
+conferido ao final (nenhum caixa aberto, nenhum registro criado nos casos recusados).
+
+**Issues geradas**
+
+A partir dos resultados, a IA redigiu três issues em `docs/issues/` para cadastro no
+GitHub:
+
+1. Observação com mais de 250 caracteres é recusada com mensagem genérica ("chame o
+   suporte técnico") e o campo não tem `maxlength`.
+2. O valor de abertura não tem limite máximo.
+3. Valores altos perdem os centavos por causa do uso de `double` para dinheiro.
+   Confirmado no sistema: R$ 2.000.000.000.000.000,01 foi gravado como ,00.
+
+**Limitações da IA / observações**
+
+- Os testes exigem a aplicação rodando em `localhost:8080`; sem ela, são ignorados
+  (não falham).
+- O teste `shouldOpenWithVeryHighValue` documenta o comportamento atual (aceita o valor);
+  deve ser invertido se o limite máximo da issue 2 for implementado.
+- Numa execução pelo IntelliJ ocorreu `NoSuchElementException` ao procurar o botão
+  "Abrir Novo". A IA não conseguiu reproduzir o erro (a suíte passou com e sem
+  `headless`); a causa provável é a aplicação ainda estar subindo no momento da execução.
+  Ficou pendente de investigação.
