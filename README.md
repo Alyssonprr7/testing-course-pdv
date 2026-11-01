@@ -22,6 +22,7 @@ Sistema de ERP web desenvolvido em Java com Spring Framework
 - `docs/casos-de-teste/`: casos de teste manual, um arquivo por integrante
 - `docs/evidencias/`: evidências de execução, uma pasta por integrante
 - `src/test/java/`: testes unitários
+- `postman/`: testes de integração no Postman (importe a collection `caixa.postman_collection.json` no Postman e rode)
 
 # Recursos
 - Cadastro produtos/clientes/fornecedor

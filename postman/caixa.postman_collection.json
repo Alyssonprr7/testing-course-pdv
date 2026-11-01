@@ -1,0 +1,750 @@
+{
+  "info": {
+    "name": "PDV - POST /caixa",
+    "description": "Testes de integração da abertura de caixa (CaixaService.cadastro). Rodar na ordem.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "usuario",
+      "value": "gerente"
+    },
+    {
+      "key": "senha",
+      "value": "123"
+    },
+    {
+      "key": "caixaId",
+      "value": ""
+    },
+    {
+      "key": "cofreId",
+      "value": ""
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// O sistema só aceita usuário logado: faz login antes de cada request.",
+          "pm.sendRequest({",
+          "    url: pm.collectionVariables.get(\"baseUrl\") + \"/login\",",
+          "    method: \"POST\",",
+          "    header: { \"Content-Type\": \"application/x-www-form-urlencoded\" },",
+          "    body: {",
+          "        mode: \"urlencoded\",",
+          "        urlencoded: [",
+          "            { key: \"username\", value: pm.collectionVariables.get(\"usuario\") },",
+          "            { key: \"password\", value: pm.collectionVariables.get(\"senha\") }",
+          "        ]",
+          "    }",
+          "});"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "01 - Abrir CAIXA com 100,00",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Resposta traz o código do caixa\", function () {",
+              "    pm.expect(pm.response.text()).to.include(\"/caixa/gerenciar/\");",
+              "});",
+              "",
+              "// a resposta termina com o código do caixa: \"...gerenciar/]}15\"",
+              "const codigo = pm.response.text().split(\"}\")[1];",
+              "pm.collectionVariables.set(\"caixaId\", codigo);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/caixa",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "caixa"
+          ]
+        },
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "descricao",
+              "value": "Caixa Postman",
+              "type": "text"
+            },
+            {
+              "key": "tipo",
+              "value": "CAIXA",
+              "type": "text"
+            },
+            {
+              "key": "valor_abertura",
+              "value": "100,00",
+              "type": "text"
+            },
+            {
+              "key": "agencia",
+              "value": "",
+              "type": "text"
+            },
+            {
+              "key": "conta",
+              "value": "",
+              "type": "text"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "02 - Conferir o CAIXA aberto",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Saldo total é 100,00\", function () {",
+              "    pm.expect(pm.response.text()).to.match(/id=\"valorTotal\"[^>]*value=\"100,00\"/);",
+              "});",
+              "",
+              "pm.test(\"Lançamento de abertura foi criado\", function () {",
+              "    pm.expect(pm.response.text()).to.include(\"Abertura de caixa\");",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/caixa/gerenciar/{{caixaId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "caixa",
+            "gerenciar",
+            "{{caixaId}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "03 - Não abre segundo CAIXA",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 500\", function () {",
+              "    pm.response.to.have.status(500);",
+              "});",
+              "",
+              "pm.test(\"Mensagem de caixa já aberto\", function () {",
+              "    pm.expect(pm.response.json().message).to.eql(\"Existe caixa de dias anteriores em aberto, favor verifique\");",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/caixa",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "caixa"
+          ]
+        },
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "descricao",
+              "value": "Outro caixa",
+              "type": "text"
+            },
+            {
+              "key": "tipo",
+              "value": "CAIXA",
+              "type": "text"
+            },
+            {
+              "key": "valor_abertura",
+              "value": "50,00",
+              "type": "text"
+            },
+            {
+              "key": "agencia",
+              "value": "",
+              "type": "text"
+            },
+            {
+              "key": "conta",
+              "value": "",
+              "type": "text"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "04 - Fechar o CAIXA (limpeza)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Caixa fechado\", function () {",
+              "    pm.expect(pm.response.text()).to.eql(\"Caixa fechado com sucesso\");",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/caixa/fechar",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "caixa",
+            "fechar"
+          ]
+        },
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "caixa",
+              "value": "{{caixaId}}",
+              "type": "text"
+            },
+            {
+              "key": "senha",
+              "value": "{{senha}}",
+              "type": "text"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "05 - Abrir COFRE sem descrição e sem valor",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "const codigo = pm.response.text().split(\"}\")[1];",
+              "pm.collectionVariables.set(\"cofreId\", codigo);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/caixa",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "caixa"
+          ]
+        },
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "descricao",
+              "value": "",
+              "type": "text"
+            },
+            {
+              "key": "tipo",
+              "value": "COFRE",
+              "type": "text"
+            },
+            {
+              "key": "valor_abertura",
+              "value": "",
+              "type": "text"
+            },
+            {
+              "key": "agencia",
+              "value": "",
+              "type": "text"
+            },
+            {
+              "key": "conta",
+              "value": "",
+              "type": "text"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "06 - Conferir o COFRE aberto",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Saldo total é 0,00\", function () {",
+              "    pm.expect(pm.response.text()).to.match(/id=\"valorTotal\"[^>]*value=\"0,00\"/);",
+              "});",
+              "",
+              "pm.test(\"Sem lançamento de abertura (valor 0)\", function () {",
+              "    pm.expect(pm.response.text()).to.not.include(\"Abertura de cofre\");",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/caixa/gerenciar/{{cofreId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "caixa",
+            "gerenciar",
+            "{{cofreId}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "07 - Valor 0,01 é aceito",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/caixa",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "caixa"
+          ]
+        },
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "descricao",
+              "value": "Cofre 0,01",
+              "type": "text"
+            },
+            {
+              "key": "tipo",
+              "value": "COFRE",
+              "type": "text"
+            },
+            {
+              "key": "valor_abertura",
+              "value": "0,01",
+              "type": "text"
+            },
+            {
+              "key": "agencia",
+              "value": "",
+              "type": "text"
+            },
+            {
+              "key": "conta",
+              "value": "",
+              "type": "text"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "08 - Valor -0,01 é recusado",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 500\", function () {",
+              "    pm.response.to.have.status(500);",
+              "});",
+              "",
+              "pm.test(\"Mensagem de valor inválido\", function () {",
+              "    pm.expect(pm.response.json().message).to.eql(\"Valor informado é inválido\");",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/caixa",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "caixa"
+          ]
+        },
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "descricao",
+              "value": "Cofre negativo",
+              "type": "text"
+            },
+            {
+              "key": "tipo",
+              "value": "COFRE",
+              "type": "text"
+            },
+            {
+              "key": "valor_abertura",
+              "value": "-0,01",
+              "type": "text"
+            },
+            {
+              "key": "agencia",
+              "value": "",
+              "type": "text"
+            },
+            {
+              "key": "conta",
+              "value": "",
+              "type": "text"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "09 - Valor com letras é recusado",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 500\", function () {",
+              "    pm.response.to.have.status(500);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/caixa",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "caixa"
+          ]
+        },
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "descricao",
+              "value": "Cofre texto",
+              "type": "text"
+            },
+            {
+              "key": "tipo",
+              "value": "COFRE",
+              "type": "text"
+            },
+            {
+              "key": "valor_abertura",
+              "value": "abc",
+              "type": "text"
+            },
+            {
+              "key": "agencia",
+              "value": "",
+              "type": "text"
+            },
+            {
+              "key": "conta",
+              "value": "",
+              "type": "text"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "10 - Tipo inexistente é recusado",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 500\", function () {",
+              "    pm.response.to.have.status(500);",
+              "});",
+              "",
+              "pm.test(\"Mensagem cita o tipo inválido\", function () {",
+              "    pm.expect(pm.response.json().message).to.include(\"GAVETA\");",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/caixa",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "caixa"
+          ]
+        },
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "descricao",
+              "value": "Gaveta",
+              "type": "text"
+            },
+            {
+              "key": "tipo",
+              "value": "GAVETA",
+              "type": "text"
+            },
+            {
+              "key": "valor_abertura",
+              "value": "10,00",
+              "type": "text"
+            },
+            {
+              "key": "agencia",
+              "value": "",
+              "type": "text"
+            },
+            {
+              "key": "conta",
+              "value": "",
+              "type": "text"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "11 - Descrição com 250 caracteres é aceita",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.variables.set(\"descricao\", \"a\".repeat(250));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/caixa",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "caixa"
+          ]
+        },
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "descricao",
+              "value": "{{descricao}}",
+              "type": "text"
+            },
+            {
+              "key": "tipo",
+              "value": "COFRE",
+              "type": "text"
+            },
+            {
+              "key": "valor_abertura",
+              "value": "10,00",
+              "type": "text"
+            },
+            {
+              "key": "agencia",
+              "value": "",
+              "type": "text"
+            },
+            {
+              "key": "conta",
+              "value": "",
+              "type": "text"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "12 - [BUG] Descrição com 251 caracteres",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.variables.set(\"descricao\", \"a\".repeat(251));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 500\", function () {",
+              "    pm.response.to.have.status(500);",
+              "});",
+              "",
+              "// falha hoje: a mensagem é genérica (issue 01)",
+              "pm.test(\"[BUG] Mensagem explica o limite de 250 caracteres\", function () {",
+              "    pm.expect(pm.response.json().message).to.include(\"250\");",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/caixa",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "caixa"
+          ]
+        },
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "descricao",
+              "value": "{{descricao}}",
+              "type": "text"
+            },
+            {
+              "key": "tipo",
+              "value": "COFRE",
+              "type": "text"
+            },
+            {
+              "key": "valor_abertura",
+              "value": "10,00",
+              "type": "text"
+            },
+            {
+              "key": "agencia",
+              "value": "",
+              "type": "text"
+            },
+            {
+              "key": "conta",
+              "value": "",
+              "type": "text"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

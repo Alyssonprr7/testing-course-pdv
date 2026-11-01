@@ -967,3 +967,104 @@ GitHub:
   "Abrir Novo". A IA não conseguiu reproduzir o erro (a suíte passou com e sem
   `headless`); a causa provável é a aplicação ainda estar subindo no momento da execução.
   Ficou pendente de investigação.
+
+---
+
+## 13. Testes de integração no Postman da abertura de caixa
+
+- **Data:** 01/11/2026
+- **Responsável:** Alysson
+- **Ferramenta:** Claude (Claude Code)
+
+**Objetivo**
+
+Criar testes de integração para o endpoint `POST /caixa` (abertura de caixa,
+`CaixaService.cadastro`) usando a aba **Tests** do Postman, como feito em aula.
+
+**Prompts utilizados (melhorados para clareza)**
+
+A collection foi construída em várias interações. Cada prompt abaixo é uma etapa, com o
+que a IA fez em resposta:
+
+> 1. Preciso gerar testes de integração com o Postman, como a professora fazia usando a
+>    aba de testes para validar se está tudo certo. No exercício, ela sugeriu o prompt
+>    "Você é um testador de software experiente. Me ajude a criar cenários de teste de
+>    integração para o endpoint <endpoint>". Deve ser para o `CaixaService`, que é a minha
+>    parte.
+
+A IA criou uma collection com todos os endpoints de caixa (abertura, suprimento,
+sangria e fechamento), validada com o newman contra a aplicação no ar.
+
+> 2. Eu só preciso testar um endpoint, mas de maneira mais robusta.
+
+A IA focou no `POST /caixa` e montou um teste data-driven: um único request executado
+para cada linha de um arquivo de dados com 35 casos, que conferia o resultado nas telas do
+sistema.
+
+> 3. Como eu importo isso no Postman?
+
+A IA explicou o passo a passo: importar a collection e o environment, selecionar o
+environment e escolher o arquivo de dados no Collection Runner.
+
+> 4. Achei tudo muito complexo. Dá para simplificar bastante, sem tantas generalizações.
+
+A IA trocou o arquivo de dados por um request por caso, cada um com o corpo escrito
+direto e testes curtos. Manteve a ideia de salvar o código do caixa em variável para os
+requests seguintes.
+
+> 5. Tira o environment também e deixa tudo na collection.
+
+`baseUrl`, `usuario` e `senha` passaram a ser variáveis da própria collection.
+
+> 6. Tira o login, acho que não precisa dele ali.
+
+A IA explicou que o login é obrigatório, porque o sistema só aceita usuário logado e só
+por formulário. Ofereceu duas alternativas: remover o teste "Sem login" ou esconder o
+login num script da collection.
+
+> 7. Faz os dois.
+
+O teste "Sem login" foi removido, e o login virou um script de pre-request da collection,
+que roda antes de cada request.
+
+> 8. O README tem que ser muito simples: só uma menção no README principal dizendo que
+>    essa é a pasta do Postman e que é preciso importar a collection.
+
+A IA removeu o `postman/README.md` e acrescentou uma linha na seção "Artefatos do
+trabalho" do README principal.
+
+**Concepção com a IA**
+
+A IA ajudou na concepção da collection, lendo o `CaixaController`, o `CaixaService` e o
+`SecurityConfig` para entender o formato das requisições e respostas. Pontos principais:
+
+- **Código do caixa salvo em variável para os outros testes.** A resposta da abertura
+  termina com o código do caixa criado (`...gerenciar/]}15`). A IA sugeriu extrair esse código
+  no script de Tests e salvá-lo numa variável (`caixaId` / `cofreId`, com
+  `pm.collectionVariables.set`). Os requests seguintes usam `{{caixaId}}` para conferir o
+  saldo na tela `/caixa/gerenciar/{{caixaId}}` e para fechar o caixa no final, deixando a
+  collection pronta para ser rodada de novo.
+- **Login:** o sistema só aceita usuário logado, e só por formulário. A IA colocou o login
+  num script de pre-request da collection, que roda antes de cada request.
+- **Casos:** classes de equivalência e valor limite no tipo, no valor (0,01 / -0,01) e na
+  descrição (250 / 251 caracteres), além da regra de um único CAIXA aberto.
+
+**Decisões do responsável**
+
+As versões da IA tendiam a ser mais complexas do que o necessário: vários endpoints,
+arquivo de dados, scripts genéricos, environment separado. Alysson conduziu a
+simplificação (prompts 2, 4, 5, 6 e 8) até chegar a uma collection legível para
+apresentação: 12 requests, um por caso, cada um com testes curtos.
+
+**Validação**
+
+A IA rodou a collection com o newman contra a aplicação no ar, duas vezes seguidas:
+**20 testes, 19 passando e 1 falhando**. A falha é intencional: a descrição com 251
+caracteres é recusada com mensagem genérica (issue 1).
+
+**Limitações da IA / observações**
+
+- Na exploração, a IA encontrou outro defeito, fora do escopo da collection final: o
+  `CaixaLancamentoService` aceita suprimento e sangria em caixa já fechado. A condição
+  `!isPresent() && ...isPresent()` nunca é verdadeira.
+- A collection exige a aplicação rodando e nenhum caixa do tipo CAIXA aberto no início.
