@@ -4,7 +4,6 @@ import java.sql.Timestamp;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,15 +17,12 @@ import net.originmobi.pdv.repository.CaixaLancamentoRepository;
 @Service
 public class CaixaLancamentoService {
 
-	@Autowired
-	private CaixaLancamentoRepository caixaLancamento;
-
-	@Autowired
-	UsuarioService usuarios;
+	private final CaixaLancamentoRepository caixaLancamento;
 
 	private Timestamp dataHoraAtual;
 
-	public CaixaLancamentoService() {
+	public CaixaLancamentoService(CaixaLancamentoRepository caixaLancamento) {
+		this.caixaLancamento = caixaLancamento;
 	}
 
 	@Transactional(readOnly = false, propagation = Propagation.REQUIRED)

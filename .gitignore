@@ -29,3 +29,4 @@ target/
 .idea/
 *.iml
 /bin/
+.sonar/
