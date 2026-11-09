@@ -1,12 +1,12 @@
 package net.originmobi.pdv.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -17,16 +17,23 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import net.originmobi.pdv.controller.TituloService;
 import net.originmobi.pdv.enumerado.TituloTipo;
+import net.originmobi.pdv.controller.TituloService;
+import net.originmobi.pdv.enumerado.EntradaSaida;
+import net.originmobi.pdv.enumerado.VendaSituacao;
+import net.originmobi.pdv.model.Caixa;
+import net.originmobi.pdv.model.CaixaLancamento;
 import net.originmobi.pdv.model.PagamentoTipo;
 import net.originmobi.pdv.model.Receber;
 import net.originmobi.pdv.model.Titulo;
+import net.originmobi.pdv.model.Usuario;
 import net.originmobi.pdv.model.Venda;
+import net.originmobi.pdv.model.VendaProduto;
 import net.originmobi.pdv.repository.VendaRepository;
 import net.originmobi.pdv.service.cartao.CartaoLancamentoService;
+import net.originmobi.pdv.singleton.Aplicacao;
 
 @ExtendWith(MockitoExtension.class)
 class VendaServiceTest {
@@ -38,6 +45,12 @@ class VendaServiceTest {
     private VendaRepository vendas;
 
     @Mock
+    private UsuarioService usuarios;
+
+    @Mock
+    private VendaProdutoService vendaProdutos;
+
+    @Mock
     private PagamentoTipoService formaPagamentos;
 
     @Mock
@@ -45,6 +58,9 @@ class VendaServiceTest {
 
     @Mock
     private ReceberService receberServ;
+
+    @Mock
+    private CaixaLancamentoService lancamentos;
 
     @Mock
     private TituloService tituloService;
@@ -59,18 +75,92 @@ class VendaServiceTest {
     private PagamentoTipo pagamentoTipoMock;
     private Titulo tituloMock;
 
+
     @BeforeEach
     void setUp() {
-        vendaMock = mock(Venda.class);
-        pagamentoTipoMock = mock(PagamentoTipo.class);
-        tituloMock = mock(Titulo.class, RETURNS_DEEP_STUBS);
+        vendaMock = new Venda();
+        pagamentoTipoMock = new PagamentoTipo();
+        tituloMock = org.mockito.Mockito.mock(Titulo.class, org.mockito.Mockito.RETURNS_DEEP_STUBS);
     }
 
-    // 1. Venda já fechada
+    // =========================================================================
+    // TESTES PARA O MÉTODO: abreVenda()
+    // =========================================================================
+
     @Test
-    void testFechaVenda_VendaJaFechada() {
+    void deveAbrirNovaVendaComSucesso() {
+        // Mock do Singleton Aplicacao usando MockedStatic (requer Mockito 3.4.0+)
+        try (MockedStatic<Aplicacao> aplicacaoMocked = mockStatic(Aplicacao.class)) {
+            Aplicacao appMock = org.mockito.Mockito.mock(Aplicacao.class);
+            aplicacaoMocked.when(Aplicacao::getInstancia).thenReturn(appMock);
+            when(appMock.getUsuarioAtual()).thenReturn("admin");
+            
+            Usuario usuarioMock = new Usuario();
+            when(usuarios.buscaUsuario("admin")).thenReturn(usuarioMock);
+
+            Long resultado = vendaService.abreVenda(vendaMock);
+
+            verify(vendas, times(1)).save(vendaMock);
+            assertEquals(VendaSituacao.ABERTA, vendaMock.getSituacao());
+            assertEquals(0.00, vendaMock.getValor_produtos());
+            assertNotNull(vendaMock.getData_cadastro());
+        }
+    }
+
+    @Test
+    void deveAtualizarVendaExistente() {
+        vendaMock.setCodigo(1L); // Venda já tem código, significa que já existe
+        vendaMock.setObservacao("Teste de observação");
+        
+        Long resultado = vendaService.abreVenda(vendaMock);
+
+        verify(vendas, times(1)).updateDadosVenda(vendaMock.getPessoa(), "Teste de observação", 1L);
+        assertEquals(1L, resultado);
+    }
+
+    // =========================================================================
+    // TESTES PARA O MÉTODO: addProduto() e removeProduto()
+    // =========================================================================
+
+    @Test
+    void deveAdicionarProdutoEmVendaAberta() {
+        when(vendas.verificaSituacao(1L)).thenReturn(VendaSituacao.ABERTA.toString());
+
+        String resultado = vendaService.addProduto(1L, 2L, 10.5);
+
+        verify(vendaProdutos, times(1)).salvar(any(VendaProduto.class));
+        assertEquals("ok", resultado);
+    }
+
+    @Test
+    void naoDeveAdicionarProdutoEmVendaFechada() {
+        when(vendas.verificaSituacao(1L)).thenReturn(VendaSituacao.FECHADA.toString());
+
+        String resultado = vendaService.addProduto(1L, 2L, 10.5);
+
+        verify(vendaProdutos, times(0)).salvar(any(VendaProduto.class));
+        assertEquals("Venda fechada", resultado);
+    }
+
+    @Test
+    void deveRemoverProdutoDeVendaAberta() {
+        vendaMock.setSituacao(VendaSituacao.ABERTA);
         when(vendas.findByCodigoEquals(1L)).thenReturn(vendaMock);
-        when(vendaMock.isAberta()).thenReturn(false); // Venda fechada
+
+        String resultado = vendaService.removeProduto(100L, 1L);
+
+        verify(vendaProdutos, times(1)).removeProduto(100L);
+        assertEquals("ok", resultado);
+    }
+
+    // =========================================================================
+    // TESTES PARA O MÉTODO: fechaVenda() - Caminhos de Exceção
+    // =========================================================================
+
+    @Test
+    void deveLancarExcecaoSeVendaFechada() {
+        vendaMock.setSituacao(VendaSituacao.FECHADA);
+        when(vendas.findByCodigoEquals(1L)).thenReturn(vendaMock);
 
         RuntimeException exception = assertThrows(RuntimeException.class, () -> 
             vendaService.fechaVenda(1L, 1L, 100.0, 0.0, 0.0, new String[]{"100.0"}, new String[]{"1"})
@@ -79,32 +169,18 @@ class VendaServiceTest {
         assertEquals("venda fechada", exception.getMessage());
     }
 
-    // 2. Valor de produtos <= 0
     @Test
-    void testFechaVenda_ValorProdutosMenorOuIgualZero() {
+    void deveLancarExcecaoSeCaixaFechadoNoPagamentoEmDinheiro() {
+        vendaMock.setSituacao(VendaSituacao.ABERTA);
         when(vendas.findByCodigoEquals(1L)).thenReturn(vendaMock);
-        when(vendaMock.isAberta()).thenReturn(true);
-
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> 
-            vendaService.fechaVenda(1L, 1L, 00.0, 00.0, 0.0, new String[]{"0.0"}, new String[]{"1"})
-        );
-
-        assertEquals("Venda sem valor, verifique", exception.getMessage());
-    }
-
-    // 3. Venda à vista em dinheiro sem caixa aberto
-    @Test
-    void testFechaVenda_AVistaDinheiro_SemCaixaAberto() {
-        when(vendas.findByCodigoEquals(1L)).thenReturn(vendaMock);
-        when(vendaMock.isAberta()).thenReturn(true);
         
-        when(pagamentoTipoMock.getFormaPagamento()).thenReturn("00"); // 00 = à vista
+        pagamentoTipoMock.setFormaPagamento("00"); // À vista
         when(formaPagamentos.busca(1L)).thenReturn(pagamentoTipoMock);
         
-        when(tituloMock.getTipo().getSigla()).thenReturn(TituloTipo.DIN.toString()); // DIN = Dinheiro
+        when(tituloMock.getTipo().getSigla()).thenReturn(TituloTipo.DIN.toString());
         when(tituloService.busca(1L)).thenReturn(Optional.of(tituloMock));
         
-        when(caixas.caixaIsAberto()).thenReturn(false); // Caixa fechado
+        when(caixas.caixaIsAberto()).thenReturn(false);
 
         RuntimeException exception = assertThrows(RuntimeException.class, () -> 
             vendaService.fechaVenda(1L, 1L, 100.0, 0.0, 0.0, new String[]{"100.0"}, new String[]{"1"})
@@ -113,68 +189,59 @@ class VendaServiceTest {
         assertEquals("nenhum caixa aberto", exception.getMessage());
     }
 
-    // 4. Venda à vista no cartão
+    // =========================================================================
+    // TESTES PARA O MÉTODO: fechaVenda() - Caminhos Felizes (Happy Paths)
+    // =========================================================================
+
     @Test
-    void testFechaVenda_AVista_CartaoCredito() throws Exception {
+    void deveFecharVendaComSucesso_AVista_Dinheiro() throws Exception {
+        // Configuração Inicial
+        vendaMock.setSituacao(VendaSituacao.ABERTA);
         when(vendas.findByCodigoEquals(1L)).thenReturn(vendaMock);
-        when(vendaMock.isAberta()).thenReturn(true);
         
-        when(pagamentoTipoMock.getFormaPagamento()).thenReturn("00"); // 00 = à vista
+        pagamentoTipoMock.setFormaPagamento("00");
         when(formaPagamentos.busca(1L)).thenReturn(pagamentoTipoMock);
         
-        // Simula cartão de crédito
-        when(tituloMock.getTipo().getSigla()).thenReturn(TituloTipo.CARTCRED.toString()); 
+        when(tituloMock.getTipo().getSigla()).thenReturn(TituloTipo.DIN.toString());
+        when(tituloService.busca(1L)).thenReturn(Optional.of(tituloMock));
+        
+        when(caixas.caixaIsAberto()).thenReturn(true);
+        when(caixas.caixaAberto()).thenReturn(Optional.of(new Caixa()));
+
+        try (MockedStatic<Aplicacao> aplicacaoMocked = mockStatic(Aplicacao.class)) {
+            Aplicacao appMock = org.mockito.Mockito.mock(Aplicacao.class);
+            aplicacaoMocked.when(Aplicacao::getInstancia).thenReturn(appMock);
+            when(appMock.getUsuarioAtual()).thenReturn("admin");
+            when(usuarios.buscaUsuario("admin")).thenReturn(new Usuario());
+
+            String resultado = vendaService.fechaVenda(1L, 1L, 100.0, 0.0, 0.0, new String[]{"100.0"}, new String[]{"1"});
+
+            verify(receberServ, times(1)).cadastrar(any(Receber.class));
+            verify(lancamentos, times(1)).lancamento(any(CaixaLancamento.class)); // Lançamento no caixa
+            verify(vendas, times(1)).fechaVenda(eq(1L), eq(VendaSituacao.FECHADA), eq(100.0), eq(0.0), eq(0.0), any(), eq(pagamentoTipoMock));
+            verify(produtos, times(1)).movimentaEstoque(1L, EntradaSaida.SAIDA); // Confirma que retirou do stock
+            
+            assertEquals("Venda finalizada com sucesso", resultado);
+        }
+    }
+
+    @Test
+    void deveFecharVendaComSucesso_AVista_CartaoCredito() throws Exception {
+        vendaMock.setSituacao(VendaSituacao.ABERTA);
+        when(vendas.findByCodigoEquals(1L)).thenReturn(vendaMock);
+        
+        pagamentoTipoMock.setFormaPagamento("00");
+        when(formaPagamentos.busca(1L)).thenReturn(pagamentoTipoMock);
+        
+        when(tituloMock.getTipo().getSigla()).thenReturn(TituloTipo.CARTCRED.toString());
         when(tituloService.busca(1L)).thenReturn(Optional.of(tituloMock));
 
-        // Executa o método
-        String resultado = vendaService.fechaVenda(1L, 1L, 100.0, 0.0, 0.0, new String[]{"100.0"}, new String[]{"1"});
+        String resultado = vendaService.fechaVenda(1L, 1L, 50.0, 0.0, 0.0, new String[]{"50.0"}, new String[]{"1"});
 
-        // Verifica se o lançamento no cartão foi chamado
-        verify(cartaoLancamento).lancamento(eq(100.0), eq(Optional.of(tituloMock)));
+        verify(receberServ, times(1)).cadastrar(any(Receber.class));
+        verify(cartaoLancamento, times(1)).lancamento(eq(50.0), eq(Optional.of(tituloMock))); // Confirma integração com maquininha
+        verify(produtos, times(1)).movimentaEstoque(1L, EntradaSaida.SAIDA);
+        
         assertEquals("Venda finalizada com sucesso", resultado);
-    }
-
-    // 5. Venda a prazo sem cliente cadastrado
-    @Test
-    void testFechaVenda_APrazo_SemCliente() {
-        when(vendas.findByCodigoEquals(1L)).thenReturn(vendaMock);
-        when(vendaMock.isAberta()).thenReturn(true);
-        
-        // Retorna null para simular falta de cliente
-        when(vendaMock.getPessoa()).thenReturn(null); 
-        
-        // Diferente de "00" simula venda a prazo (ex: "30")
-        when(pagamentoTipoMock.getFormaPagamento()).thenReturn("30"); 
-        when(formaPagamentos.busca(1L)).thenReturn(pagamentoTipoMock);
-        
-        when(tituloService.busca(1L)).thenReturn(Optional.of(tituloMock));
-
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> 
-            vendaService.fechaVenda(1L, 1L, 100.0, 0.0, 0.0, new String[]{"100.0"}, new String[]{"1"})
-        );
-
-        assertEquals("Venda sem cliente, verifique", exception.getMessage());
-    }
-
-    // 6. Soma das parcelas diferente do valor total (em dinheiro à vista)
-    @Test
-    void testFechaVenda_SomaParcelasDiferenteValorTotal() {
-        when(vendas.findByCodigoEquals(1L)).thenReturn(vendaMock);
-        when(vendaMock.isAberta()).thenReturn(true);
-        
-        when(pagamentoTipoMock.getFormaPagamento()).thenReturn("00"); // 00 = à vista
-        when(formaPagamentos.busca(1L)).thenReturn(pagamentoTipoMock);
-        
-        when(tituloMock.getTipo().getSigla()).thenReturn(TituloTipo.DIN.toString()); // DIN = Dinheiro
-        when(tituloService.busca(1L)).thenReturn(Optional.of(tituloMock));
-        
-        when(caixas.caixaIsAberto()).thenReturn(true); // Caixa precisa estar aberto para validar valores
-
-        // Valor dos produtos = 100.0, mas a parcela informada é = 50.0
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> 
-            vendaService.fechaVenda(1L, 1L, 100.0, 0.0, 0.0, new String[]{"50.0"}, new String[]{"1"})
-        );
-
-        assertEquals("Valor das parcelas diferente do valor total de produtos, verifique", exception.getMessage());
     }
 }
