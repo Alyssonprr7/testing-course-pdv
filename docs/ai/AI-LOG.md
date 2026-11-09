@@ -1068,3 +1068,134 @@ caracteres é recusada com mensagem genérica (issue 1).
   `CaixaLancamentoService` aceita suprimento e sangria em caixa já fechado. A condição
   `!isPresent() && ...isPresent()` nunca é verdadeira.
 - A collection exige a aplicação rodando e nenhum caixa do tipo CAIXA aberto no início.
+
+---
+
+## 14. Entrega 2: mutação, cobertura e testes de sistema (Selenium) de Sangria / Suprimento
+
+- **Data:** 08/11/2026 e 09/11/2026
+- **Responsável:** Bruno
+- **Atividade:** Entrega 2 — teste estrutural (JaCoCo), teste baseado em defeitos (PIT)
+  e teste de sistema (Selenium) da classe `CaixaLancamentoService`
+- **Ferramenta:** Claude (Claude Code)
+
+**Objetivo**
+
+Levar a minha classe às metas da Entrega 2 (pelo menos 80% de cobertura de arestas e
+80% de escore de mutação) e criar os testes de sistema com Selenium da funcionalidade
+"Sangria / suprimento de caixa", usando o JaCoCo, o PIT e o Selenium 3 já configurados
+no `pom.xml` pelo Alysson (entrada 11).
+
+**Prompt utilizado (melhorado para clareza)**
+
+> Com base no enunciado da Entrega 2 e na divisão do grupo, me ajude com a minha parte:
+> cobertura de arestas de pelo menos 80% (JaCoCo), escore de mutação de pelo menos 80%
+> (PIT) e testes de sistema com Selenium da funcionalidade de sangria/suprimento. Use
+> as bibliotecas e versões já configuradas no projeto, não invente comportamento que o
+> sistema não tenha, pergunte quando houver dúvida e me deixe revisar antes de qualquer
+> commit.
+
+### Passo 1 — Cobertura e mutação
+
+Medição de partida (`mvn test` + `mvn test-compile org.pitest:pitest-maven:mutationCoverage`):
+
+| Métrica | Valor | Meta |
+|---|---|---|
+| Arestas (JaCoCo) | 19/22 (86%) | 80% — já atendida |
+| Mutação (PIT) | 15/19 (79%) | 80% — **não atendida** |
+
+A IA listou os mutantes não mortos e sugeriu dois testes:
+
+- `saidaComValorZero_naoEhConvertida`: valor limite da regra "saída positiva vira
+  negativa" (`valor > 0`). Mata o mutante que troca `>` por `>=`: com ele, o zero seria
+  gravado como `-0.0`, que o `Double.equals` distingue de `0.0`.
+- `lancamentosDoCaixa_retornaAListaDoRepository`: o método do extrato não era chamado
+  por nenhum teste (mutante sem cobertura).
+
+Resultado: **18 testes**, mutação **17/19 (89%)**, arestas **19/22 (86%)**, linhas 32/33.
+
+O que sobrou não pode ser atingido por teste nenhum: as 3 arestas e os 2 mutantes
+restantes estão no guard "Nenhum caixa aberto" (condição sempre falsa, issue #14) e nos
+ternários das linhas 65 e 67, que ficam dentro de um `if (isEmpty())` e por isso sempre
+dão o mesmo resultado. São código morto e mutantes equivalentes.
+
+**Decisão:** aceitei os dois testes sem alterações. Considerei mudar o teste do valor
+zero para recusar uma sangria de R$ 0,00, que não faz sentido de negócio, mas mantive:
+o código atual aceita esse valor, e o objetivo do teste é fixar a fronteira da regra.
+
+**Validação:** conferi nos relatórios HTML que o mutante da linha 55 passou a ser morto e
+que os dois sobreviventes são os do guard. Evidências: `E2-COB` e `E2-MUT` em
+`docs/evidencias/bruno/`.
+
+### Passo 2 — Testes de sistema com Selenium
+
+Antes de escrever os testes, a IA leu a tela de gerenciar caixa, os modais, o `caixa.js`
+e o `CaixaController`. Dois pontos mudaram o desenho dos casos:
+
+- A função `mascaraValor` do `caixa.js` descarta tudo que não é dígito. Pela tela, "-50"
+  vira 50, então o defeito do valor negativo (issue #13) **só é alcançável chamando o
+  endpoint direto**, não pela interface.
+- Com o caixa fechado, quem impede suprimento e sangria é a tela (botões desabilitados),
+  e não o service (issue #14).
+
+`src/test/java/net/originmobi/pdv/selenium/SangriaSuprimentoSeleniumTest.java`, no
+mesmo padrão do `CaixaSeleniumTest` (JUnit 5, Selenium 3.141.59, Chrome):
+
+| ID | Cenário | Técnica |
+|---|---|---|
+| CT-BRU-SEL-001 a 004 | Suprimento, sangria, sangria maior que o saldo e conferência do extrato e dos totais | Automação dos casos CT-BRU-MAN-001 a 004 |
+| CT-BRU-SEL-005 | Observação vazia recebe "Sangria de caixa" / "Suprimento de caixa" | Classes de equivalência |
+| CT-BRU-SEL-006 | "-50" digitado perde o sinal | Classe inválida |
+| CT-BRU-SEL-007 | Suprimento de R$ 0,00 | Valor limite — **defeito** |
+| CT-BRU-SEL-008 | Suprimento de R$ 0,01 é aceito | Valor limite |
+| CT-BRU-SEL-009 | Caixa fechado desabilita Suprimento e Retirada | Regra de negócio |
+
+O limite da sangria igual ao saldo (R$ 100,00 / R$ 100,01) não foi repetido, porque já
+está no `CaixaSeleniumTest`.
+
+**Solução inicial da IA x solução final**
+
+- **CT-BRU-SEL-007.** A versão inicial testava 0,00 e 0,01 juntos e esperava sucesso nos
+  dois. Na execução, o suprimento de 0,00 mostrou um alerta com o texto "empty String".
+  Investigando: a máscara `maskMoney` do campo apaga o zero quando o campo perde o foco,
+  o servidor recebe o valor vazio e responde HTTP 500 (`NumberFormatException` em
+  `Double.valueOf("")`), cuja mensagem vai direto para o alerta. Confirmei com uma
+  requisição direta ao endpoint. O caso foi dividido em 007, que documenta o defeito, e
+  008 (0,01). A primeira correção da IA ainda errou o detalhe: assumiu que o campo
+  ficava vazio logo depois de digitar, mas ele mostra "R$ 0,00" até perder o foco. A
+  asserção foi movida para depois da troca de foco.
+- **Limpeza entre os testes.** Numa execução minha, o alerta da sangria do
+  CT-BRU-SEL-002 não chegou em 10 segundos. A limpeza não conseguiu fechar o caixa e os
+  6 testes seguintes falharam com "Existe caixa de dias anteriores em aberto". A IA
+  reforçou o `@AfterEach` (aceita alerta pendente, recarrega a tela e fecha o caixa),
+  para uma falha não contaminar os outros testes. Depois disso, 4 execuções seguidas
+  passaram com 9/9. A causa da demora do alerta não foi identificada e não se repetiu.
+
+**Decisão:** aceitei os 9 casos e as duas correções acima. O CT-BRU-SEL-007 documenta o
+comportamento atual, como nos testes unitários, e deve ser invertido se o defeito for
+corrigido.
+
+**Validação:** executei a suíte no meu terminal: 9 testes, 0 falhas, 0 erros
+(`docs/evidencias/bruno/E2-SEL - SangriaSuprimento execucao.png`). Conferi no banco que
+nenhum caixa fica aberto depois da execução.
+
+**Ajustes de ambiente**
+
+- O `docker-compose.yml` publica o debug Java (porta 5005, sem autenticação) e o MySQL
+  para toda a rede. Subi a aplicação com um arquivo de override fora do repositório que
+  restringe as portas a `127.0.0.1`. O arquivo do projeto não foi alterado.
+- O Selenium 3 não baixa o chromedriver sozinho. Usei o chromedriver 141 já presente na
+  máquina, informado na execução com `-Dwebdriver.chrome.driver=<caminho>`, sem caminho
+  fixo no código.
+- O caixa usado nos meus testes manuais da Entrega 1 ainda estava aberto e impedia
+  qualquer teste de abrir caixa. Fechei pelo próprio sistema.
+
+**Limitações da IA / observações**
+
+- A IA rodou o Maven local ao mesmo tempo que o container compilava o projeto na mesma
+  pasta `target/`, o que gerou erros de compilação falsos. A solução foi esperar o
+  container terminar.
+- O `docker compose` deixa arquivos do root no `target/`, e o `mvn clean` local falha.
+- Os testes exigem a aplicação em `localhost:8080` e nenhum caixa do tipo CAIXA aberto.
+  A branch `JoseAugusto` muda a porta da aplicação para 8081, o que quebra os testes
+  Selenium e a collection do Postman se for integrada como está.
