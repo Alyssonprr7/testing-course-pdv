@@ -1199,3 +1199,88 @@ nenhum caixa fica aberto depois da execução.
 - Os testes exigem a aplicação em `localhost:8080` e nenhum caixa do tipo CAIXA aberto.
   A branch `JoseAugusto` muda a porta da aplicação para 8081, o que quebra os testes
   Selenium e a collection do Postman se for integrada como está.
+
+---
+
+## 15. Inspeção com SonarQube e correção de `CaixaLancamentoService`
+
+- **Data:** 09/11/2026
+- **Responsável:** Bruno
+- **Atividade:** Entrega 2 — relatório de inspeção do código-fonte (Sonar) e correção dos
+  problemas da minha classe
+- **Ferramenta:** Claude (Claude Code)
+
+**Objetivo**
+
+Executar o SonarQube no projeto, registrar o resultado antes e depois e resolver os
+problemas apontados na `CaixaLancamentoService`, conferindo que a correção não altera o
+resultado dos testes já feitos (unitário, mutação, cobertura e Selenium).
+
+**Prompt utilizado (melhorado para clareza)**
+
+> Suba o SonarQube localmente, rode a análise do projeto e liste os problemas da
+> `CaixaLancamentoService`. Antes de corrigir, me mostre o que cada correção muda. Corrija
+> apenas o que o Sonar aponta, sem alterar o comportamento da classe, e depois rode de
+> novo os testes, a cobertura, a mutação e o Sonar.
+
+**Configuração**
+
+- SonarQube Community Build 26.11 em Docker, acessível só em `127.0.0.1:9000`, com o banco
+  embutido (suficiente para avaliação).
+- Análise com `sonar-maven-plugin` 5.0.0.4389, chamado pela linha de comando, sem alterar
+  o `pom.xml`. O token de análise foi gerado por mim e passado por variável de ambiente,
+  sem ficar gravado em nenhum arquivo do repositório.
+- Antes da análise rodam os testes unitários, para o Sonar importar a cobertura do JaCoCo.
+  Os testes Selenium e o `PdvApplicationTests` ficam de fora.
+
+**Resultado — antes**
+
+Na `CaixaLancamentoService`: 0 bugs, 0 vulnerabilidades, notas A em confiabilidade e
+manutenibilidade, e **2 issues** da regra `java:S6813` ("Remove this field injection and
+use constructor injection instead"), de impacto médio, nas linhas 21
+(`CaixaLancamentoRepository`) e 24 (`UsuarioService`).
+
+**Correção**
+
+- Injeção por construtor no lugar do `@Autowired` em campo, com o repository `final`.
+- Remoção do `UsuarioService`, que era injetado mas nunca usado pela classe (já tinha sido
+  notado no scaffold dos testes da Entrega 1).
+- Remoção do construtor vazio: o Spring 5 usa o construtor único automaticamente.
+
+Antes de alterar, conferi que nenhuma classe cria a `CaixaLancamentoService` com `new`:
+todas a recebem por injeção do Spring, e os testes das outras classes usam mock.
+
+**Resultado — depois**
+
+| | Antes | Depois |
+|---|---|---|
+| Issues do Sonar na classe | 2 | **0** |
+| Issues do projeto (confiabilidade / manutenibilidade) | 189 / 181 | 187 / 179 |
+| Mutação (PIT) | 89% (17/19) | 89% (17/19) |
+| Arestas (JaCoCo) | 86% (19/22) | 86% (19/22) |
+| Testes unitários do projeto | 150, com as 3 falhas intencionais do `NotaFiscalItemServiceTest` | Igual, nenhuma falha nova |
+| Selenium (`SangriaSuprimentoSeleniumTest` + `CaixaSeleniumTest`) | 9 + 12 | 9 + 12, todos passando |
+
+Os 2 mutantes sobreviventes continuam sendo os do guard "Nenhum caixa aberto" (issue #14).
+
+**Decisão:** corrigi apenas as issues apontadas pelo Sonar, que é o que a Entrega 2 pede. Os
+defeitos encontrados pelos testes (#13, #14, #15 e #22) não foram corrigidos: eles mudam o
+comportamento da classe, e os testes que os documentam teriam de ser reescritos. Ficam
+registrados nas issues e nos testes. A correção sugerida pela IA foi aceita sem alterações.
+
+**Validação:** rodei de novo os testes unitários do projeto, o PIT, o JaCoCo e as duas
+suítes Selenium contra a aplicação recompilada com o código corrigido, e reanalisei o
+projeto no Sonar. Evidências `E2-SONAR`, `E2-COB` e `E2-MUT` ("antes sonar" e "depois
+sonar") em `docs/evidencias/bruno/`.
+
+**Limitações da IA / observações**
+
+- As regras padrão do Sonar não apontaram nenhum dos defeitos que os testes encontraram
+  na mesma classe (condição sempre falsa, valor negativo que fura a validação de saldo,
+  `e.getStackTrace()` sem efeito). A inspeção estática complementa os testes, mas não os
+  substitui.
+- O token de análise não tem permissão para consultar a fila de processamento do Sonar,
+  então a IA esperou o processamento por tempo antes de ler os resultados pela API.
+- Na primeira análise, o `PdvApplicationTests` rodou e falhou porque o filtro `-Dtest`
+  faz o Surefire ignorar a exclusão do profile `jdk9-plus-tests`. Na segunda, ele foi
+  excluído explicitamente. Não afeta a análise.
