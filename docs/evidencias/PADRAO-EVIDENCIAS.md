@@ -26,6 +26,30 @@ CT-CAIXA-002 - sucesso (pt2).png
 O ID do arquivo tem que ser o mesmo ID usado no documento de casos de teste do
 integrante, para dar rastreabilidade entre o caso e a evidência.
 
+## Relatórios de ferramentas (Entrega 2)
+
+Prints de relatório não têm ID de caso de teste. No lugar do ID vai um prefixo
+com a entrega e o tipo de evidência, seguido da classe analisada e do momento:
+
+```
+E2-<TIPO> - <Classe> <momento>.<extensão>
+```
+
+| Tipo | Ferramenta |
+|---|---|
+| `COB` | Cobertura (JaCoCo) |
+| `MUT` | Mutação (PIT) |
+| `SONAR` | Inspeção de código (SonarQube) |
+| `SEL` | Execução dos testes de sistema (Selenium) |
+
+O momento é `antes sonar` ou `depois sonar`, porque as correções do Sonar alteram
+o código e mudam os números de cobertura e mutação. Exemplos:
+
+```
+E2-COB - CaixaLancamentoService antes sonar.png
+E2-MUT - CaixaLancamentoService depois sonar (pt2).png
+```
+
 ## Evidências de banco (opcional, recomendado)
 
 Quando o cenário altera dados, vale registrar o estado do banco antes e depois:

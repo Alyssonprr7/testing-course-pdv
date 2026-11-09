@@ -3,13 +3,17 @@ package net.originmobi.pdv.service;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.sql.Timestamp;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -292,6 +296,36 @@ public class CaixaLancamentoServiceTest {
 
 		assertEquals(SALDO_INSUFICIENTE, service.lancamento(lanc));
 		assertNotNull(lanc.getData_cadastro());
+	}
+
+	// ==================================================================
+	// Entrega 2 - casos para o escore de mutação (PIT)
+	// ==================================================================
+
+	/**
+	 * Limite da conversão para negativo: a regra é valor > 0, então uma saída de
+	 * valor zero é salva como 0.0. Se a condição virasse >= 0, o valor seria
+	 * multiplicado por -1 e gravado como -0.0, que o Double.equals distingue.
+	 */
+	@Test
+	public void saidaComValorZero_naoEhConvertida() {
+		CaixaLancamento lanc = lancamento("sangria", 0.0, TipoLancamento.SANGRIA, EstiloLancamento.SAIDA,
+				caixaAberto(100.0));
+
+		assertEquals(SUCESSO, service.lancamento(lanc));
+		assertEquals(Double.valueOf(0.0), capturarSalvo().getValor());
+	}
+
+	/** O extrato do caixa vem direto do repository, sem filtro nem cópia. */
+	@Test
+	public void lancamentosDoCaixa_retornaAListaDoRepository() {
+		Caixa caixa = caixaAberto(100.0);
+		List<CaixaLancamento> extrato = Arrays.asList(
+				lancamento("suprimento", 30.0, TipoLancamento.SUPRIMENTO, EstiloLancamento.ENTRADA, caixa),
+				lancamento("sangria", -50.0, TipoLancamento.SANGRIA, EstiloLancamento.SAIDA, caixa));
+		when(caixaLancamento.findByCaixaEquals(caixa)).thenReturn(extrato);
+
+		assertSame(extrato, service.lancamentosDoCaixa(caixa));
 	}
 
 }
