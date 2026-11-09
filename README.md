@@ -21,7 +21,7 @@ Sistema de ERP web desenvolvido em Java com Spring Framework
 - `docs/ai/AI-LOG.md`: registro dos usos de IA
 - `docs/casos-de-teste/`: casos de teste manual, um arquivo por integrante
 - `docs/evidencias/`: evidências de execução, uma pasta por integrante
-- `src/test/java/`: testes unitários
+- `src/test/java/`: testes unitários e, em `net/originmobi/pdv/selenium/`, os testes de sistema com Selenium (exigem a aplicação rodando em `localhost:8080`)
 - `postman/`: testes de integração no Postman (importe a collection `caixa.postman_collection.json` no Postman e rode)
 
 # Recursos
