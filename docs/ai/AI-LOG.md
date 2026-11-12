@@ -1284,3 +1284,88 @@ sonar") em `docs/evidencias/bruno/`.
 - Na primeira análise, o `PdvApplicationTests` rodou e falhou porque o filtro `-Dtest`
   faz o Surefire ignorar a exclusão do profile `jdk9-plus-tests`. Na segunda, ele foi
   excluído explicitamente. Não afeta a análise.
+
+---
+
+## 16. Correção dos problemas do SonarQube em `CaixaService`
+
+- **Data:** 09/11/2026 (reteste em 11/11/2026)
+- **Responsável:** Alysson
+- **Atividade:** Entrega 2 — correção dos problemas apontados pelo Sonar na minha classe
+- **Ferramenta:** Claude (Claude Code)
+
+**Objetivo**
+
+Resolver os 20 problemas que o SonarQube for IDE apontou na `CaixaService`, sem alterar o
+comportamento coberto pelos testes já existentes.
+
+**Prompt utilizado (melhorado para clareza)**
+
+> Corrija os problemas que o SonarQube apontou na `CaixaService` (print do relatório do
+> SonarQube for IDE em anexo).
+
+**Problemas apontados (20)**
+
+| Regra | Qtd. | Descrição |
+|---|---|---|
+| `java:S3776` | 1 | Complexidade cognitiva de `cadastro()` em 24 (limite 15) |
+| `java:S112` | 6 | `RuntimeException` genérica |
+| `java:S6813` | 3 | Injeção por campo (`@Autowired`) |
+| `java:S1450` | 2 | Campos `descricao` e `usuario` que deveriam ser variáveis locais |
+| `java:S1066` | 2 | `if` aninhados que podem ser unidos |
+| `java:S1117` | 1 | Variável local `usuario` escondendo o campo |
+| `java:S3358` | 1 | Ternário aninhado |
+| `java:S9435` | 1 | Ternário com condição negada |
+| `java:S1488` | 1 | Variável temporária `caixaOptional` retornada logo em seguida |
+| `java:S8688` | 1 | `LocalDate.now()` sem fuso horário |
+| `java:S2143` | 1 | Uso da API antiga de data/hora em vez de `java.time` |
+
+**Sugestões da IA (aceitas)**
+
+- Nova exceção `net.originmobi.pdv.exception.CaixaException`, que herda de
+  `RuntimeException`. Ela substitui os `throw new RuntimeException(...)` e repassa a causa
+  original no lugar do `e.getStackTrace()`, que não tinha efeito.
+- Injeção por construtor, com os três campos `final`.
+- `descricao` e `usuario` viraram variáveis locais. Isso também resolve o `S1117`: a
+  local de `fechaCaixa` foi renomeada para `usuarioAtual`.
+- `cadastro()` foi dividido em três métodos privados (`defineDescricao`,
+  `defineObservacaoAbertura` e `lancaSaldoInicial`), o que também remove o ternário
+  aninhado.
+- `if` aninhados unidos com `&&` em `listarCaixas` e `listaBancosAbertosTipoFilterBanco`.
+- `caixaAtual.map(Caixa::getValor_total).orElse(0.0)` no lugar do ternário negado.
+- Retorno direto em `buscaCaixaUsuario`.
+- `LocalDate.now(ZoneId.systemDefault())` e
+  `Timestamp.valueOf(LocalDateTime.now(ZoneId.systemDefault()))` no lugar de
+  `System.currentTimeMillis()`.
+
+**Cuidados com o comportamento**
+
+- `CaixaException` herda de `RuntimeException`, então os testes que esperam
+  `RuntimeException` continuam valendo e as mensagens não mudaram.
+- Fechar um caixa inexistente continua lançando `NoSuchElementException`.
+- Data inválida no filtro continua lançando `IllegalArgumentException`, porque a IA manteve
+  `Date.valueOf(String)` em vez de `LocalDate.parse` (que lançaria outra exceção).
+- O `@InjectMocks` dos testes funciona com o construtor novo, sem alteração nos testes.
+
+**Decisão:** eu sugeri as correções a partir do relatório do SonarQube, depois revisei as
+mudanças feitas pela IA e rodei de novo os testes existentes antes de aceitar.
+
+**Validação**
+
+| Execução | Resultado |
+|---|---|
+| `CaixaServiceTest` | 72 testes, todos passando |
+| `VendaServiceTest` e `RecebimentoServiceTest` (usam a `CaixaService`) | 6 + 31, todos passando |
+| Suíte unitária completa (`mvn test`) | 158 testes: 3 falhas e 5 erros, todos anteriores à mudança |
+
+- As 3 falhas são as intencionais do `NotaFiscalItemServiceTest`.
+- Os 5 erros são do `VendaServiceIntegrationTest`, que não consegue subir o contexto do
+  Spring (o Hibernate falha ao criar a `SessionFactory` neste JDK). O mesmo erro acontece
+  no commit anterior, sem a correção, então não foi causado por ela.
+
+**Limitações da IA / observações**
+
+- A regra `java:S2143` pode continuar aparecendo: o model `Caixa` e o `CaixaRepository`
+  ainda usam `java.util.Date` e `java.sql.Timestamp`, e a `CaixaService` precisa converter
+  para esses tipos. Zerar essa regra exige mudar o model e o repositório.
+- PIT, JaCoCo, Selenium e a nova análise no Sonar não foram rodados nesta interação.
