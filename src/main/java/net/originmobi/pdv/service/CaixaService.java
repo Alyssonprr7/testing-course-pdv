@@ -3,10 +3,11 @@ package net.originmobi.pdv.service;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -15,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import net.originmobi.pdv.enumerado.caixa.CaixaTipo;
 import net.originmobi.pdv.enumerado.caixa.EstiloLancamento;
 import net.originmobi.pdv.enumerado.caixa.TipoLancamento;
+import net.originmobi.pdv.exception.CaixaException;
 import net.originmobi.pdv.filter.BancoFilter;
 import net.originmobi.pdv.filter.CaixaFilter;
 import net.originmobi.pdv.model.Caixa;
@@ -26,23 +28,23 @@ import net.originmobi.pdv.singleton.Aplicacao;
 @Service
 public class CaixaService {
 
-	private String descricao;
-	private Usuario usuario;
+	private final CaixaRepository caixas;
 
-	@Autowired
-	private CaixaRepository caixas;
+	private final UsuarioService usuarios;
 
-	@Autowired
-	private UsuarioService usuarios;
+	private final CaixaLancamentoService lancamentos;
 
-	@Autowired
-	private CaixaLancamentoService lancamentos;
+	public CaixaService(CaixaRepository caixas, UsuarioService usuarios, CaixaLancamentoService lancamentos) {
+		this.caixas = caixas;
+		this.usuarios = usuarios;
+		this.lancamentos = lancamentos;
+	}
 
 	@Transactional(readOnly = false, propagation = Propagation.REQUIRED)
 	public Long cadastro(Caixa caixa) {
 
 		if (caixa.getTipo().equals(CaixaTipo.CAIXA) && caixaIsAberto())
-			throw new RuntimeException("Existe caixa de dias anteriores em aberto, favor verifique");
+			throw new CaixaException("Existe caixa de dias anteriores em aberto, favor verifique");
 
 		// caso o valor de abertura seja null, modifica o mesmo para 0.0, esse valor é
 		// adicionado tambem no valor_total
@@ -50,23 +52,16 @@ public class CaixaService {
 		caixa.setValor_abertura(vlbertura);
 
 		if (caixa.getValor_abertura() < 0)
-			throw new RuntimeException("Valor informado é inválido");
+			throw new CaixaException("Valor informado é inválido");
 
 		Aplicacao aplicacao = Aplicacao.getInstancia();
-		usuario = usuarios.buscaUsuario(aplicacao.getUsuarioAtual());
+		Usuario usuario = usuarios.buscaUsuario(aplicacao.getUsuarioAtual());
 
-		if (caixa.getTipo().equals(CaixaTipo.CAIXA))
-			descricao = caixa.getDescricao().isEmpty() ? "Caixa diário" : caixa.getDescricao();
-		else if (caixa.getTipo().equals(CaixaTipo.COFRE))
-			descricao = caixa.getDescricao().isEmpty() ? "Cofre" : caixa.getDescricao();
-		else
-			descricao = caixa.getDescricao().isEmpty() ? "Banco" : caixa.getDescricao();
+		LocalDate dataAtual = LocalDate.now(ZoneId.systemDefault());
 
-		LocalDate dataAtual = LocalDate.now();
-
-		caixa.setDescricao(descricao);
+		caixa.setDescricao(defineDescricao(caixa));
 		caixa.setUsuario(usuario);
-		caixa.setData_cadastro(java.sql.Date.valueOf(dataAtual));
+		caixa.setData_cadastro(Date.valueOf(dataAtual));
 
 		// se for BANCO, limpa os valores especiais de agencia e conta
 		if (caixa.getTipo().equals(CaixaTipo.BANCO)) {
@@ -77,25 +72,11 @@ public class CaixaService {
 		try {
 			caixas.save(caixa);
 		} catch (Exception e) {
-			e.getStackTrace();
-			throw new RuntimeException("Erro no processo de abertura, chame o suporte técnico");
+			throw new CaixaException("Erro no processo de abertura, chame o suporte técnico", e);
 		}
 
 		if (caixa.getValor_abertura() > 0) {
-			try {
-
-				String observacao = caixa.getTipo().equals(CaixaTipo.CAIXA) ? "Abertura de caixa"
-						: caixa.getTipo().equals(CaixaTipo.COFRE) ? "Abertura de cofre" : "Abertura de banco";
-
-				CaixaLancamento lancamento = new CaixaLancamento(observacao, caixa.getValor_abertura(),
-						TipoLancamento.SALDOINICIAL, EstiloLancamento.ENTRADA, caixa, usuario);
-
-				lancamentos.lancamento(lancamento);
-
-			} catch (Exception e) {
-				e.getStackTrace();
-				throw new RuntimeException("Erro no processo, chame o suporte");
-			}
+			lancaSaldoInicial(caixa, usuario);
 		} else {
 			// se não for realizado o lançamento de caixa então joga o valor total do caixa
 			// para 0.0
@@ -105,35 +86,70 @@ public class CaixaService {
 		return caixa.getCodigo();
 	}
 
+	private String defineDescricao(Caixa caixa) {
+		if (!caixa.getDescricao().isEmpty())
+			return caixa.getDescricao();
+
+		if (caixa.getTipo().equals(CaixaTipo.CAIXA))
+			return "Caixa diário";
+
+		if (caixa.getTipo().equals(CaixaTipo.COFRE))
+			return "Cofre";
+
+		return "Banco";
+	}
+
+	private String defineObservacaoAbertura(CaixaTipo tipo) {
+		if (tipo.equals(CaixaTipo.CAIXA))
+			return "Abertura de caixa";
+
+		if (tipo.equals(CaixaTipo.COFRE))
+			return "Abertura de cofre";
+
+		return "Abertura de banco";
+	}
+
+	private void lancaSaldoInicial(Caixa caixa, Usuario usuario) {
+		try {
+			String observacao = defineObservacaoAbertura(caixa.getTipo());
+
+			CaixaLancamento lancamento = new CaixaLancamento(observacao, caixa.getValor_abertura(),
+					TipoLancamento.SALDOINICIAL, EstiloLancamento.ENTRADA, caixa, usuario);
+
+			lancamentos.lancamento(lancamento);
+		} catch (Exception e) {
+			throw new CaixaException("Erro no processo, chame o suporte", e);
+		}
+	}
+
 	public String fechaCaixa(Long caixa, String senha) {
 
 		Aplicacao aplicacao = Aplicacao.getInstancia();
-		Usuario usuario = usuarios.buscaUsuario(aplicacao.getUsuarioAtual());
+		Usuario usuarioAtual = usuarios.buscaUsuario(aplicacao.getUsuarioAtual());
 
 		BCryptPasswordEncoder decode = new BCryptPasswordEncoder();
 
 		if (senha.equals(""))
 			return "Favor, informe a senha";
 
-		if (decode.matches(senha, usuario.getSenha())) {
+		if (decode.matches(senha, usuarioAtual.getSenha())) {
 
 			// busca caixa atual
 			Optional<Caixa> caixaAtual = caixas.findById(caixa);
 
 			if (caixaAtual.map(Caixa::getData_fechamento).isPresent())
-				throw new RuntimeException("Caixa já esta fechado");
+				throw new CaixaException("Caixa já esta fechado");
 
-			Double valorTotal = !caixaAtual.map(Caixa::getValor_total).isPresent() ? 0.0
-					: caixaAtual.map(Caixa::getValor_total).get();
+			Double valorTotal = caixaAtual.map(Caixa::getValor_total).orElse(0.0);
 
-			Timestamp dataHoraAtual = new Timestamp(System.currentTimeMillis());
+			Timestamp dataHoraAtual = Timestamp.valueOf(LocalDateTime.now(ZoneId.systemDefault()));
 			caixaAtual.get().setData_fechamento(dataHoraAtual);
 			caixaAtual.get().setValor_fechamento(valorTotal);
 
 			try {
 				caixas.save(caixaAtual.get());
 			} catch (Exception e) {
-				throw new RuntimeException("Ocorreu um erro ao fechar o caixa, chame o suporte");
+				throw new CaixaException("Ocorreu um erro ao fechar o caixa, chame o suporte", e);
 			}
 
 			return "Caixa fechado com sucesso";
@@ -152,13 +168,11 @@ public class CaixaService {
 	}
 
 	public List<Caixa> listarCaixas(CaixaFilter filter) {
-		if (filter.getData_cadastro() != null) {
-			if (!filter.getData_cadastro().equals("")) {
-				filter.setData_cadastro(filter.getData_cadastro().replace("/", "-"));
-				return caixas.buscaCaixasPorDataAbertura(Date.valueOf(filter.getData_cadastro()));
-			}
+		if (filter.getData_cadastro() != null && !filter.getData_cadastro().equals("")) {
+			filter.setData_cadastro(filter.getData_cadastro().replace("/", "-"));
+			return caixas.buscaCaixasPorDataAbertura(Date.valueOf(filter.getData_cadastro()));
 		}
-		
+
 		return caixas.listaCaixasAbertos();
 	}
 
@@ -177,8 +191,7 @@ public class CaixaService {
 	// pega o caixa aberto do usuário informado
 	public Optional<Caixa> buscaCaixaUsuario(String usuario) {
 		Usuario usu = usuarios.buscaUsuario(usuario);
-		Optional<Caixa> caixaOptional = Optional.ofNullable(caixas.findByCaixaAbertoUsuario(usu.getCodigo()));
-		return caixaOptional;
+		return Optional.ofNullable(caixas.findByCaixaAbertoUsuario(usu.getCodigo()));
 	}
 
 	public List<Caixa> listaBancos() {
@@ -190,11 +203,9 @@ public class CaixaService {
 	}
 
 	public List<Caixa> listaBancosAbertosTipoFilterBanco(CaixaTipo tipo, BancoFilter filter) {
-		if (filter.getData_cadastro() != null) {
-			if (!filter.getData_cadastro().equals("")) {
-				filter.setData_cadastro(filter.getData_cadastro().replace("/", "-"));
-				return caixas.buscaCaixaTipoData(tipo, Date.valueOf(filter.getData_cadastro()));
-			}
+		if (filter.getData_cadastro() != null && !filter.getData_cadastro().isEmpty()) {
+			filter.setData_cadastro(filter.getData_cadastro().replace("/", "-"));
+			return caixas.buscaCaixaTipoData(tipo, Date.valueOf(filter.getData_cadastro()));
 		}
 
 		return caixas.buscaCaixaTipo(CaixaTipo.BANCO);
