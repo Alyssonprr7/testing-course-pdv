@@ -1,0 +1,487 @@
+{
+  "info": {
+    "_postman_id": "2f5527f2-a00b-4118-ba37-b68aa1dea6a6",
+    "name": "PDV",
+    "description": "### Welcome to Postman! This is your first collection. \n\nCollections are your starting point for building and testing APIs. You can use this one to:\n\n• Group related requests\n• Test your API in real-world scenarios\n• Document and share your requests\n\nUpdate the name and overview whenever you’re ready to make it yours.\n\n[Learn more about Postman Collections.](https://learning.postman.com/docs/collections/collections-overview/)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "58227536",
+    "_collection_link": "https://go.postman.co/collection/58227536-2f5527f2-a00b-4118-ba37-b68aa1dea6a6?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Get data",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "postman-echo.com/get",
+          "host": [
+            "postman-echo",
+            "com"
+          ],
+          "path": [
+            "get"
+          ]
+        },
+        "description": "This is a GET request and it is used to \"get\" data from an endpoint. There is no request body for a GET request, but you can use query parameters to help specify the resource you want data on (e.g., in this request, we have `id=1`).\n\nA successful GET response will have a `200 OK` status, and should include some kind of response body - for example, HTML web content or JSON data."
+      },
+      "response": []
+    },
+    {
+      "name": "Post data",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Successful POST request\", function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+              "});",
+              ""
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n\t\"name\": \"Add your name in the body\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "postman-echo.com/post",
+          "host": [
+            "postman-echo",
+            "com"
+          ],
+          "path": [
+            "post"
+          ]
+        },
+        "description": "This is a POST request, submitting data to an API via the request body. This request submits JSON data, and the data is reflected in the response.\n\nA successful POST request typically returns a `200 OK` or `201 Created` response code."
+      },
+      "response": []
+    },
+    {
+      "name": "Autimation exercise",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Body matches string\", function () {\r\n    pm.expect(pm.response.text()).to.include(\"Blue Top\");\r\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://automationexercise.com/api/productsList",
+          "protocol": "https",
+          "host": [
+            "automationexercise",
+            "com"
+          ],
+          "path": [
+            "api",
+            "productsList"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Criar usuário",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "https://automationexercise.com/api/createAccount?name=Belmont",
+          "protocol": "https",
+          "host": [
+            "automationexercise",
+            "com"
+          ],
+          "path": [
+            "api",
+            "createAccount"
+          ],
+          "query": [
+            {
+              "key": "name",
+              "value": "Belmont"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Login na petsore",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Response time is less than 200ms\", function () {\r\n    pm.expect(pm.response.responseTime).to.be.below(200);\r\n});\r\npm.test(\"Status code is 200\", function () {\r\n    pm.response.to.have.status(200);\r\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://petstore.swagger.io/?username=Belmont&passwoerd=123456#/user/loginUser",
+          "protocol": "https",
+          "host": [
+            "petstore",
+            "swagger",
+            "io"
+          ],
+          "path": [
+            ""
+          ],
+          "query": [
+            {
+              "key": "username",
+              "value": "Belmont"
+            },
+            {
+              "key": "passwoerd",
+              "value": "123456"
+            }
+          ],
+          "hash": "/user/loginUser"
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Logout petstore",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\npm.test(\"Response time is less than 200ms\", function () {\r\n    pm.expect(pm.response.responseTime).to.be.below(200);\r\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://petstore.swagger.io/#/user/logoutUser",
+          "protocol": "https",
+          "host": [
+            "petstore",
+            "swagger",
+            "io"
+          ],
+          "path": [
+            ""
+          ],
+          "hash": "/user/logoutUser"
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "add pet",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\npm.test(\"Response time is less than 200ms\", function () {\r\n    pm.expect(pm.response.responseTime).to.be.below(200);\r\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"id\": 1,\r\n  \"category\": {\r\n    \"id\": 1,\r\n    \"name\": \"Cachorro\"\r\n  },\r\n  \"name\": \"Pandora\",\r\n  \r\n  \"tags\": [\r\n    {\r\n      \"id\": 0,\r\n      \"name\": \"string\"\r\n    }\r\n  ],\r\n  \"status\": \"available\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://petstore.swagger.io/v2/pet",
+          "protocol": "https",
+          "host": [
+            "petstore",
+            "swagger",
+            "io"
+          ],
+          "path": [
+            "v2",
+            "pet"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Find Pet",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": ""
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "01 - LOGIN",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// Verifica se o cookie JSESSIONID existe na resposta\r\nvar sessionCookie = pm.cookies.get(\"JSESSIONID\");\r\n\r\nif (sessionCookie) {\r\n    // Salva o valor do cookie na variável global 'meu_cookie'\r\n    pm.globals.set(\"meu_cookie\", sessionCookie);\r\n    console.log(\"Cookie salvo automaticamente: \" + sessionCookie);\r\n}"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      },
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "username",
+              "value": "gerente"
+            },
+            {
+              "key": "password",
+              "value": "123"
+            }
+          ]
+        },
+        "url": {
+          "raw": "http://127.0.0.1:8081/login",
+          "protocol": "http",
+          "host": [
+            "127",
+            "0",
+            "0",
+            "1"
+          ],
+          "port": "8081",
+          "path": [
+            "login"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "02- Abrir venda",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status deve ser 302 Found\", function () {\r\n    pm.response.to.have.status(302);\r\n});\r\n\r\nvar locationHeader = pm.response.headers.get(\"Location\");\r\nif (locationHeader) {\r\n    var partes = locationHeader.split(\"/\");\r\n    var idVenda = partes[partes.length - 1];\r\n    \r\n    // Guarda o ID automaticamente numa variável global/ambiente\r\n    pm.globals.set(\"id_venda_atual\", idVenda);\r\n    console.log(\"ID capturado: \" + idVenda);\r\n}"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      },
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Cookie",
+            "value": "JSESSIONID={{meu_cookie}}"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "observacao",
+              "value": "Venda de Integraçao API"
+            },
+            {
+              "key": "pessoa",
+              "value": "1"
+            }
+          ]
+        },
+        "url": {
+          "raw": "http://127.0.0.1:8081/venda",
+          "protocol": "http",
+          "host": [
+            "127",
+            "0",
+            "0",
+            "1"
+          ],
+          "port": "8081",
+          "path": [
+            "venda"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "03 - Adicionar produto",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Cookie",
+            "value": "JSESSIONID={{meu_cookie}}"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "codigoVen",
+              "value": "{{id_venda_atual}}"
+            },
+            {
+              "key": "codigoPro",
+              "value": "1"
+            },
+            {
+              "key": "valorBalanca",
+              "value": "0"
+            }
+          ]
+        },
+        "url": {
+          "raw": "http://127.0.0.1:8081/venda/addproduto",
+          "protocol": "http",
+          "host": [
+            "127",
+            "0",
+            "0",
+            "1"
+          ],
+          "port": "8081",
+          "path": [
+            "venda",
+            "addproduto"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "04 - Fechar a venda",
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      },
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Cookie",
+            "value": "JSESSIONID={{meu_cookie}}"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "venda",
+              "value": "{{id_venda_atual}}"
+            },
+            {
+              "key": "pagamentotipo",
+              "value": "1"
+            },
+            {
+              "key": "valor_produtos",
+              "value": "6.50"
+            },
+            {
+              "key": "valor_desconto",
+              "value": "0"
+            },
+            {
+              "key": "valor_acrescimo",
+              "value": "0"
+            },
+            {
+              "key": "valores",
+              "value": "6.50"
+            },
+            {
+              "key": "titulos",
+              "value": "1"
+            }
+          ]
+        },
+        "url": {
+          "raw": "http://127.0.0.1:8081/venda/fechar?",
+          "protocol": "http",
+          "host": [
+            "127",
+            "0",
+            "0",
+            "1"
+          ],
+          "port": "8081",
+          "path": [
+            "venda",
+            "fechar"
+          ],
+          "query": [
+            {
+              "key": "",
+              "value": ""
+            }
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}
