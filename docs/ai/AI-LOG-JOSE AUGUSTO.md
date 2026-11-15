@@ -148,7 +148,7 @@ A de número 5 foi implementada com sucesso, tendo aprendido sobre o uso do `Àr
 Após ter argumentado com a IA sob a impossibilidade de modificar as classes originais,
 ela compreendeu:
 
-# isso implica em mexer no código do programa e eu, como testadr, não poso fazê-lo.
+### isso implica em mexer no código do programa e eu, como testadr, não poso fazê-lo.
 > Entendo perfeitamente a sua restrição. Como testador(a), seu papel é validar o 
 > comportamento atual do sistema e, muitas vezes, você realmente não tem permissão 
 > (ou não é o escopo do seu trabalho) para alterar o código-fonte de produção.
@@ -196,18 +196,18 @@ especificamente para a classe VendaService e seu respectivo teste:  ....
 
 Após configurações, foi rodado o teste na referida ferramenta encontrando o seguinte resultado:
 
-#  Método           |   Mutações criadas  | Mortos  | Sobreviventes | Sem  Coertura |
-#  abreVenda        |         7           |   6     |       1       |     0         | 
-#  busca            |         4           |   0     |       0       |     4         |       
-#  addProduto       |         4           |   4     |       0       |     0         |
-#  removeProduto    |         4           |   3     |       0       |     1         |
-#  lista            |         1           |   0     |       0       |     1         |
-#  fechaVenda       |         27          |   12    |       12      |     3         |
-#  aPazo            |         6           |   0     |       0       |     6         |
-#  avsitaDinheiro   |         10          |   3     |       6       |     1         |
-#  vendaIsAberta    |         2           |   2     |       0       |     0         |
-#  qtdAbertos       |         1           |   0     |       0       |     1         |
->  Total            |         66          |   30    |       19      |     17        |
+  Método           |   Mutações criadas  | Mortos  | Sobreviventes | Sem  Coertura |
+  abreVenda        |         7           |   6     |       1       |     0         | 
+  busca            |         4           |   0     |       0       |     4         |       
+  addProduto       |         4           |   4     |       0       |     0         |
+  removeProduto    |         4           |   3     |       0       |     1         |
+  lista            |         1           |   0     |       0       |     1         |
+  fechaVenda       |         27          |   12    |       12      |     3         |
+  aPazo            |         6           |   0     |       0       |     6         |
+  avsitaDinheiro   |         10          |   3     |       6       |     1         |
+  vendaIsAberta    |         2           |   2     |       0       |     0         |
+  qtdAbertos       |         1           |   0     |       0       |     1         |
+  Total            |         66          |   30    |       19      |     17        |
 
 
 ## 4. Implementação de novos testes para eliminação de mutantes
@@ -266,17 +266,17 @@ da falha arquitetural detetada durante a elaboração dos testes.
 Após a eliminação dos mutantes, conforme proposta descrita acima com os 4 testes iniciais acrescentados 
 aos testes unitários, e posteirormente os demais 11 testes gerados por IA passamos a ter  o seguinte quadro:
 
-#  Método           |   Mutações criadas  | Mortos  | Sobreviventes | Sem  Coertura |
-#  abreVenda        |         7           |   7     |       0       |     0         | 
-#  busca            |         4           |   4     |       0       |     0         |       
-#  addProduto       |         4           |   4     |       0       |     0         |
-#  removeProduto    |         4           |   4     |       0       |     0         |
-#  lista            |         1           |   1     |       0       |     0         |
-#  fechaVenda       |         27          |   22    |       3       |     2         |
-#  aPazo            |         6           |   5     |       1       |     0         |
-#  avsitaDinheiro   |         10          |   3     |       6       |     1         |
-#  vendaIsAberta    |         2           |   2     |       0       |     0         |
-#  qtdAbertos       |         1           |   1     |       0       |     0         |
->  Total            |         66          |   53    |       10      |     3         |
+  Método           |   Mutações criadas  | Mortos  | Sobreviventes | Sem  Coertura |
+  abreVenda        |         7           |   7     |       0       |     0         | 
+  busca            |         4           |   4     |       0       |     0         |       
+  addProduto       |         4           |   4     |       0       |     0         |
+  removeProduto    |         4           |   4     |       0       |     0         |
+  lista            |         1           |   1     |       0       |     0         |
+  fechaVenda       |         27          |   22    |       3       |     2         |
+  aPazo            |         6           |   5     |       1       |     0         |
+  avsitaDinheiro   |         10          |   3     |       6       |     1         |
+  vendaIsAberta    |         2           |   2     |       0       |     0         |
+  qtdAbertos       |         1           |   1     |       0       |     0         |
+  Total            |         66          |   53    |       10      |     3         |
 
 
