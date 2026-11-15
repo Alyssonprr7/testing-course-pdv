@@ -267,17 +267,17 @@ da falha arquitetural detetada durante a elaboração dos testes.
 Após a eliminação dos mutantes, conforme proposta descrita acima com os 4 testes iniciais acrescentados 
 aos testes unitários, e posteirormente os demais 11 testes gerados por IA passamos a ter  o seguinte quadro:
 
-  Método           |   Mutações criadas  | Mortos  | Sobreviventes | Sem  Coertura |
-  abreVenda        |         7           |   7     |       0       |     0         | 
-  busca            |         4           |   4     |       0       |     0         |       
-  addProduto       |         4           |   4     |       0       |     0         |
-  removeProduto    |         4           |   4     |       0       |     0         |
-  lista            |         1           |   1     |       0       |     0         |
-  fechaVenda       |         27          |   22    |       3       |     2         |
-  aPazo            |         6           |   5     |       1       |     0         |
-  avsitaDinheiro   |         10          |   3     |       6       |     1         |
-  vendaIsAberta    |         2           |   2     |       0       |     0         |
-  qtdAbertos       |         1           |   1     |       0       |     0         |
-  Total            |         66          |   53    |       10      |     3         |
 
-
+|  Método  |  Mutações criadas  | Mortos  | Sobreviventes | Sem  Coertura |
+|---|---|---|---|---|
+|  abreVenda  |  7  |  7  |  0   |  0  | 
+|  busca  |  4  |  4  |  0  |  0  |       
+|  addProduto  |   4   |  4  |  0  |  0  |
+|  removeProduto  |   4   |  4  |  0  |  0  |
+|  lista  |   1   |  1  |   0  |  0  |
+|  fechaVenda  |   27   |  22  |  3  |  0   |
+|  aPazo  |   6   |  5  |  1  |  0  |
+|  avsitaDinheiro  |   10   |  3  |  6  |  1  |
+|  vendaIsAberta  |   2  |  2  |  0  |  0  |
+|  qtdAbertos  |   1  |  1  |  0  |  0  |
+|  Total  |   66   |  53  |  10  |  3  |
