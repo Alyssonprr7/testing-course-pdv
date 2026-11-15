@@ -196,18 +196,19 @@ especificamente para a classe VendaService e seu respectivo teste:  ....
 
 Após configurações, foi rodado o teste na referida ferramenta encontrando o seguinte resultado:
 
-  Método           |   Mutações criadas  | Mortos  | Sobreviventes | Sem  Coertura |
-  abreVenda        |         7           |   6     |       1       |     0         | 
-  busca            |         4           |   0     |       0       |     4         |       
-  addProduto       |         4           |   4     |       0       |     0         |
-  removeProduto    |         4           |   3     |       0       |     1         |
-  lista            |         1           |   0     |       0       |     1         |
-  fechaVenda       |         27          |   12    |       12      |     3         |
-  aPazo            |         6           |   0     |       0       |     6         |
-  avsitaDinheiro   |         10          |   3     |       6       |     1         |
-  vendaIsAberta    |         2           |   2     |       0       |     0         |
-  qtdAbertos       |         1           |   0     |       0       |     1         |
-  Total            |         66          |   30    |       19      |     17        |
+|  Método  |  Mutações criadas  | Mortos  | Sobreviventes | Sem  Coertura |
+|---|---|---|---|---|
+|  abreVenda  |  7  |  6  |  1   |  0  | 
+|  busca  |  4  |  0  |  0  |  4  |       
+|  addProduto  |   4   |  4  |  0  |  0  |
+|  removeProduto  |   4   |  3  |  0  |  1  |
+|  lista  |   1   |  0  |   0  |  1  |
+|  fechaVenda  |   27   |  12  |  12  |  3   |
+|  aPazo  |   6   |  0  |  0  |  6  |
+|  avsitaDinheiro  |   10   |  3  |  6  |  1  |
+|  vendaIsAberta  |   2  |  2  |  0  |  0  |
+|  qtdAbertos  |   1  |  0  |  0  |  1  |
+|  Total  |   66   |  30  |  19  |  17  |
 
 
 ## 4. Implementação de novos testes para eliminação de mutantes
