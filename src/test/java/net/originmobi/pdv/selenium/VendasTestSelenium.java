@@ -28,23 +28,36 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class VendasTestSelenium {
 	
-	private static final String BASE_URL = "http://127.0.0.1:8081";
+	private static final String BASE_URL = "http://127.0.0.1:8080";
 
 	private static WebDriver navegador;
 	private static WebDriverWait wait;
 	
 	@BeforeAll
 	static void setUp() {
-		Assumptions.assumeTrue(applicationIsRunning(), "Aplicação não está rodando em " + BASE_URL);
-		System.setProperty("webdriver.chrome.driver", "C:\\Drivers\\chromedriver-win64\\chromedriver.exe");
-		ChromeOptions options = new ChromeOptions();
-		if (Boolean.parseBoolean(System.getProperty("headless", "false"))) {
-			options.addArguments("--headless=new");
-		}
-		navegador = new ChromeDriver(options);
-		wait = new WebDriverWait(navegador, 10);
+	    Assumptions.assumeTrue(applicationIsRunning(), "Aplicação não está rodando em " + BASE_URL);
+	    System.setProperty("webdriver.chrome.driver", "C:\\Drivers\\chromedriver-win64\\chromedriver.exe");
+	    ChromeOptions options = new ChromeOptions();
+	    if (Boolean.parseBoolean(System.getProperty("headless", "false"))) {
+	        options.addArguments("--headless=new");
+	    }
+	    navegador = new ChromeDriver(options);
+	    wait = new WebDriverWait(navegador, 10);
 
-		//login("gerente", "123");
+	    login("gerente", "123");
+	    
+	    wait.until(ExpectedConditions.visibilityOfElementLocated(
+	            By.xpath("//*[contains(text(), 'Usuário: gerente')]")
+	        ));
+	    
+	    
+	    desabilitarControleDeEstoque();
+	    cadastrarTituloVendaAVista();
+	    abrirCaixa();  
+	    
+	    
+	    // 3. Limpa os cookies para deslogar e permitir que o testAberturaPagina (Order 1) funcione
+	    navegador.manage().deleteAllCookies();
 	}
 
 	@AfterAll
@@ -57,7 +70,7 @@ public class VendasTestSelenium {
 	
 	private static boolean applicationIsRunning() {
 		try (Socket socket = new Socket()) {
-			socket.connect(new InetSocketAddress("127.0.0.1", 8081), 1000);
+			socket.connect(new InetSocketAddress("127.0.0.1", 8080), 1000);
 			return true;
 		} catch (Exception e) {
 			return false;
@@ -156,7 +169,10 @@ public class VendasTestSelenium {
 		Alert alertaNativo = navegador.switchTo().alert();
 
 		String mensagemAlerta = alertaNativo.getText();
-		assertTrue(mensagemAlerta.contains("Venda finalizada com sucesso"), "A mensagem do alerta não é a esperada.");
+		
+		System.out.println("TEXTO REAL CAPTURADO PELO SELENIUM: [" + mensagemAlerta + "]");
+		
+		assertTrue(mensagemAlerta.contains("Venda finalizada com sucesso"), "A mensagem do alerta não é a esperada. Texto capturado: [" + mensagemAlerta + "]");
 
 		alertaNativo.accept();
 		
@@ -171,5 +187,76 @@ public class VendasTestSelenium {
 		navegador.findElement(By.id("btn-login")).click();
 		wait.until(ExpectedConditions.not(ExpectedConditions.urlContains("/login")));
 	}
+	
+	private static void desabilitarControleDeEstoque() {
+
+	    navegador.get(BASE_URL + "/produto/1"); 
+	    
+
+	    WebElement selectEstoque = wait.until(ExpectedConditions.visibilityOfElementLocated(
+	            By.name("controla_estoque")
+	    ));
+	    
+	    org.openqa.selenium.support.ui.Select comboEstoque = new org.openqa.selenium.support.ui.Select(selectEstoque);
+	    comboEstoque.selectByVisibleText("NAO");
+	    
+	    navegador.findElement(By.xpath("//*[@id=\"form_produto\"]/input[2]")).click();
+	    
+	    wait.until(ExpectedConditions.urlContains("/produto"));
+	}
+
+	private static void cadastrarTituloVendaAVista() {
+	    navegador.get(BASE_URL + "/titulos"); 
+	    
+	    WebElement btnNovo = wait.until(ExpectedConditions.elementToBeClickable(
+	            By.linkText("Novo") 
+	    ));
+	    btnNovo.click();
+	    
+	    WebElement inputDescricao = wait.until(ExpectedConditions.visibilityOfElementLocated(
+	            By.id("descricao") 
+	    ));
+	    inputDescricao.sendKeys("venda a vista");
+	    
+
+	    navegador.findElement(By.xpath("/html/body/section[1]/div/div/form/input[2]")).click();
+	    
+	    wait.until(ExpectedConditions.urlContains("/titulos"));
+	}
+	
+	private static void abrirCaixa() {
+    navegador.get(BASE_URL + "/caixa");
+
+    WebElement btnAbrirCaixa = wait.until(ExpectedConditions.elementToBeClickable(
+            By.xpath("//a[@href='/caixa/form']")
+    ));
+
+    // Verifica se já existe algum caixa com status "Aberto" na tabela
+    boolean caixaJaAberto = !navegador.findElements(
+            By.xpath("//*[normalize-space(text())='Aberto']")
+    ).isEmpty();
+
+    if (caixaJaAberto) {
+        System.out.println("Caixa já está aberto. Prosseguindo...");
+        return;
+    }
+
+    // Se não está aberto, executa a abertura 
+    btnAbrirCaixa.click();
+
+    WebElement inputSaldo = wait.until(ExpectedConditions.visibilityOfElementLocated(
+            By.id("valorAbertura")
+    ));
+    inputSaldo.clear();
+    inputSaldo.sendKeys("100.00");
+
+    WebElement btnConfirmar = wait.until(ExpectedConditions.elementToBeClickable(
+            By.xpath("//a[contains(@class, 'btn-abrir-caixa')]")
+    ));
+    btnConfirmar.click();
+
+    wait.until(ExpectedConditions.urlContains("/caixa/gerenciar/"));
+	}
+	    
 
 }
