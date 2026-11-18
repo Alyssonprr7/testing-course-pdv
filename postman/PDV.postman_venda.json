@@ -298,7 +298,7 @@
           ]
         },
         "url": {
-          "raw": "http://127.0.0.1:8081/login",
+          "raw": "http://127.0.0.1:8080/login",
           "protocol": "http",
           "host": [
             "127",
@@ -306,7 +306,7 @@
             "0",
             "1"
           ],
-          "port": "8081",
+          "port": "8080",
           "path": [
             "login"
           ]
@@ -352,7 +352,7 @@
           ]
         },
         "url": {
-          "raw": "http://127.0.0.1:8081/venda",
+          "raw": "http://127.0.0.1:8080/venda",
           "protocol": "http",
           "host": [
             "127",
@@ -360,7 +360,7 @@
             "0",
             "1"
           ],
-          "port": "8081",
+          "port": "8080",
           "path": [
             "venda"
           ]
@@ -396,7 +396,7 @@
           ]
         },
         "url": {
-          "raw": "http://127.0.0.1:8081/venda/addproduto",
+          "raw": "http://127.0.0.1:8080/venda/addproduto",
           "protocol": "http",
           "host": [
             "127",
@@ -404,7 +404,7 @@
             "0",
             "1"
           ],
-          "port": "8081",
+          "port": "8080",
           "path": [
             "venda",
             "addproduto"
@@ -460,7 +460,7 @@
           ]
         },
         "url": {
-          "raw": "http://127.0.0.1:8081/venda/fechar?",
+          "raw": "http://127.0.0.1:8080/venda/fechar?",
           "protocol": "http",
           "host": [
             "127",
@@ -468,7 +468,7 @@
             "0",
             "1"
           ],
-          "port": "8081",
+          "port": "8080",
           "path": [
             "venda",
             "fechar"
