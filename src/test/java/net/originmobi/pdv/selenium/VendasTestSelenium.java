@@ -28,7 +28,7 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class VendasTestSelenium {
 	
-	private static final String BASE_URL = "http://127.0.0.1:8081";
+	private static final String BASE_URL = "http://127.0.0.1:8080";
 
 	private static WebDriver navegador;
 	private static WebDriverWait wait;
@@ -57,7 +57,7 @@ public class VendasTestSelenium {
 	
 	private static boolean applicationIsRunning() {
 		try (Socket socket = new Socket()) {
-			socket.connect(new InetSocketAddress("127.0.0.1", 8081), 1000);
+			socket.connect(new InetSocketAddress("127.0.0.1", 8080), 1000);
 			return true;
 		} catch (Exception e) {
 			return false;
