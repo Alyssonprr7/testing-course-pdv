@@ -1,0 +1,178 @@
+newman
+
+PDV - Recebimento
+
+Root 01 - Abrir CAIXA com 100,00 (preparação)
+  POST http://localhost:4445/login [200 OK, 9.21kB, 90ms]
+  POST http://localhost:4445/caixa [200 OK, 350B, 11ms]
+  Pass  Caixa aberto
+
+Root 02 - Abrir recebimento da parcela 9001
+  POST http://localhost:4445/login [200 OK, 9.21kB, 73ms]
+  GET http://localhost:4445/receber/parcelas?codpessoa=1&parcelas=9001 [200 OK, 346B, 11ms]
+  Pass  Status 200
+  Pass  Resposta traz o código do recebimento
+
+Root 03 - Receber o total (100,00)
+  POST http://localhost:4445/login [200 OK, 9.21kB, 72ms]
+  POST http://localhost:4445/recebimento?receber=6&total=&desconto=&acrescimo=&vlrecebido=100.00&titulo=9001 [200 OK, 331B, 75ms]
+  Pass  Status 200
+  Pass  Mensagem esperada
+
+Root 04 - Caixa recebeu o lançamento e a trigger somou o saldo
+  POST http://localhost:4445/login [200 OK, 9.21kB, 73ms]
+  GET http://localhost:4445/caixa/gerenciar/2 [200 OK, 17.01kB, 13ms]
+  Pass  Saldo total 200,00
+
+Root 05 - Não recebe de novo o mesmo recebimento
+  POST http://localhost:4445/login [200 OK, 9.21kB, 71ms]
+  POST http://localhost:4445/recebimento?receber=6&total=&desconto=&acrescimo=&vlrecebido=100.00&titulo=9001 [500 Internal Server Error, 502B, 9ms]
+  Pass  Status 500
+  Pass  Mensagem esperada
+
+Root 06 - Parcela quitada não pode ser reaberta
+  POST http://localhost:4445/login [200 OK, 9.21kB, 73ms]
+  GET http://localhost:4445/receber/parcelas?codpessoa=1&parcelas=9005 [500 Internal Server Error, 520B, 9ms]
+  Pass  Status 500
+  Pass  Mensagem esperada
+
+Root 07 - Abrir recebimento da parcela 9002
+  POST http://localhost:4445/login [200 OK, 9.21kB, 71ms]
+  GET http://localhost:4445/receber/parcelas?codpessoa=1&parcelas=9002 [200 OK, 346B, 10ms]
+  Pass  Status 200
+  Pass  Resposta traz o código do recebimento
+
+Root 08 - Receber parcial (40,00)
+  POST http://localhost:4445/login [200 OK, 9.21kB, 71ms]
+  POST http://localhost:4445/recebimento?receber=7&total=&desconto=&acrescimo=&vlrecebido=40.00&titulo=9001 [200 OK, 331B, 15ms]
+  Pass  Status 200
+  Pass  Mensagem esperada
+
+Root 09 - Lista mostra o saldo restante de 60,00
+  POST http://localhost:4445/login [200 OK, 9.21kB, 70ms]
+  GET http://localhost:4445/receber?codigo=1&pago=false [200 OK, 14.15kB, 15ms]
+  Pass  Restante 60,00
+
+Root 10 - Abrir recebimento das parcelas 9003 e 9004
+  POST http://localhost:4445/login [200 OK, 9.21kB, 70ms]
+  GET http://localhost:4445/receber/parcelas?codpessoa=1&parcelas=9003, 9004 [200 OK, 346B, 11ms]
+  Pass  Status 200
+  Pass  Resposta traz o código do recebimento
+
+Root 11 - Receber 80,00 distribuindo entre as parcelas
+  POST http://localhost:4445/login [200 OK, 9.21kB, 70ms]
+  POST http://localhost:4445/recebimento?receber=8&total=&desconto=&acrescimo=&vlrecebido=80.00&titulo=9001 [200 OK, 331B, 14ms]
+  Pass  Status 200
+  Pass  Mensagem esperada
+
+Root 12 - Segunda parcela fica com 20,00
+  POST http://localhost:4445/login [200 OK, 9.21kB, 69ms]
+  GET http://localhost:4445/receber?codigo=1&pago=false [200 OK, 13.49kB, 14ms]
+  Pass  Restante 20,00
+
+Root 13 - Parcela de outro cliente é recusada
+  POST http://localhost:4445/login [200 OK, 9.21kB, 70ms]
+  GET http://localhost:4445/receber/parcelas?codpessoa=9001&parcelas=9006 [500 Internal Server Error, 530B, 7ms]
+  Pass  Status 500
+  Pass  Mensagem esperada
+
+Root 14 - Abrir recebimento da parcela 9006
+  POST http://localhost:4445/login [200 OK, 9.21kB, 71ms]
+  GET http://localhost:4445/receber/parcelas?codpessoa=1&parcelas=9006 [200 OK, 346B, 10ms]
+  Pass  Status 200
+  Pass  Resposta traz o código do recebimento
+
+Root 15 - Valor um centavo acima do total é recusado
+  POST http://localhost:4445/login [200 OK, 9.21kB, 72ms]
+  POST http://localhost:4445/recebimento?receber=9&total=&desconto=&acrescimo=&vlrecebido=100.01&titulo=9001 [500 Internal Server Error, 519B, 8ms]
+  Pass  Status 500
+  Pass  Mensagem esperada
+
+Root 16 - Valor zero é recusado
+  POST http://localhost:4445/login [200 OK, 9.21kB, 72ms]
+  POST http://localhost:4445/recebimento?receber=9&total=&desconto=&acrescimo=&vlrecebido=0.00&titulo=9001 [500 Internal Server Error, 504B, 10ms]
+  Pass  Status 500
+  Pass  Mensagem esperada
+
+Root 17 - Sem título é recusado
+  POST http://localhost:4445/login [200 OK, 9.21kB, 72ms]
+  POST http://localhost:4445/recebimento?receber=9&total=&desconto=&acrescimo=&vlrecebido=100.00&titulo= [500 Internal Server Error, 522B, 8ms]
+  Pass  Status 500
+  Pass  Mensagem esperada
+
+Root 18 - Cancelar recebimento aberto
+  POST http://localhost:4445/login [200 OK, 9.21kB, 71ms]
+  PUT http://localhost:4445/recebimento/codigo?codigo=9 [200 OK, 327B, 9ms]
+  Pass  Status 200
+  Pass  Resposta traz a lista de receber
+
+Root 19 - Recebimento processado não pode ser cancelado
+  POST http://localhost:4445/login [200 OK, 9.21kB, 69ms]
+  PUT http://localhost:4445/recebimento/codigo?codigo=6 [500 Internal Server Error, 550B, 8ms]
+  Pass  Status 500
+  Pass  Mensagem esperada
+
+Root 20 - Cliente com código acima de 127 abre recebimento
+  POST http://localhost:4445/login [200 OK, 9.21kB, 70ms]
+  GET http://localhost:4445/receber/parcelas?codpessoa=9001&parcelas=9011 [500 Internal Server Error, 530B, 8ms]
+  1. Status 200
+  2. Resposta traz o código do recebimento
+
+Root 21 - Abrir recebimento da parcela 9007
+  POST http://localhost:4445/login [200 OK, 9.21kB, 71ms]
+  GET http://localhost:4445/receber/parcelas?codpessoa=1&parcelas=9007 [200 OK, 347B, 10ms]
+  Pass  Status 200
+  Pass  Resposta traz o código do recebimento
+
+Root 22 - Receber 90,00 com desconto de 10,00
+  POST http://localhost:4445/login [200 OK, 9.21kB, 69ms]
+  POST http://localhost:4445/recebimento?receber=10&total=&desconto=10.00&acrescimo=&vlrecebido=90.00&titulo=9001 [200 OK, 331B, 14ms]
+  Pass  Status 200
+  Pass  Mensagem esperada
+
+Root 23 - [BUG #10] Desconto deveria quitar a parcela
+  POST http://localhost:4445/login [200 OK, 9.21kB, 69ms]
+  GET http://localhost:4445/receber?codigo=1&pago=false [200 OK, 13.49kB, 13ms]
+  3. Parcela 9007 não deveria continuar aberta
+
+Root 24 - Fechar o CAIXA (limpeza)
+  POST http://localhost:4445/login [200 OK, 9.21kB, 69ms]
+  POST http://localhost:4445/caixa/fechar [200 OK, 323B, 66ms]
+  Pass  Caixa fechado
+
+-----------------------------------------------------------------
+|                         |         executed |           failed |
+--------------------------+------------------+-------------------
+|              iterations |                1 |                0 |
+--------------------------+------------------+-------------------
+|                requests |               48 |                0 |
+--------------------------+------------------+-------------------
+|            test-scripts |               24 |                0 |
+--------------------------+------------------+-------------------
+|      prerequest-scripts |               24 |                0 |
+--------------------------+------------------+-------------------
+|              assertions |               42 |                3 |
+-----------------------------------------------------------------
+| total run duration: 2.6s                                      |
+-----------------------------------------------------------------
+| total data received: 271.91kB (approx)                        |
+-----------------------------------------------------------------
+| average response time: 43ms [min: 7ms, max: 90ms, s.d.: 30ms] |
+-----------------------------------------------------------------
+
+[31m  # [39m[31m failure        [39m[31m detail                                                                          [39m
+[90m    [39m[90m                [39m[90m                                                                                 [39m
+ 1.  AssertionError  Status 200                                                                      
+                     expected response to have status code 200 but got 500                           
+                     at assertion:0 in test-script                                                   
+                     inside "20 - Cliente com código acima de 127 abre recebimento"                  
+[90m    [39m[90m                [39m[90m                                                                                 [39m
+ 2.  AssertionError  Resposta traz o código do recebimento                                           
+                     expected '{"timestamp":"2026-11-02T18:32:53.405…' to include '/recebimento/'    
+                     at assertion:1 in test-script                                                   
+                     inside "20 - Cliente com código acima de 127 abre recebimento"                  
+[90m    [39m[90m                [39m[90m                                                                                 [39m
+ 3.  AssertionError  Parcela 9007 não deveria continuar aberta                                       
+                     expected '<!DOCTYPE html>\n<html xmlns="http://…' to not include 'value="9007"' 
+                     at assertion:0 in test-script                                                   
+                     inside "23 - [BUG #10] Desconto deveria quitar a parcela"                       
