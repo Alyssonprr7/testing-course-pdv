@@ -1,0 +1,5 @@
+[ERROR] Tests run: 48, Failures: 0, Errors: 1, Skipped: 0, Time elapsed: 0.950 s <<< FAILURE! -- in net.originmobi.pdv.service.RecebimentoServiceTest
+[ERROR] net.originmobi.pdv.service.RecebimentoServiceTest.deveAceitarParcelaDoProprioClienteComCodigoAcimaDe127 -- Time elapsed: 0.004 s <<< ERROR!
+	at net.originmobi.pdv.service.RecebimentoServiceTest.deveAceitarParcelaDoProprioClienteComCodigoAcimaDe127(RecebimentoServiceTest.java:704)
+[ERROR]   RecebimentoServiceTest.deveAceitarParcelaDoProprioClienteComCodigoAcimaDe127:704 » Runtime A parcela 5 não pertence ao cliente selecionado
+[ERROR] Tests run: 48, Failures: 0, Errors: 1, Skipped: 0

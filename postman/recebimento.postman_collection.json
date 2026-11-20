@@ -1,0 +1,1255 @@
+{
+  "info": {
+    "name": "PDV - Recebimento",
+    "description": "Testes de integração do recebimento de parcelas (RecebimentoService). Antes de rodar, aplique src/test/resources/sql/recebimento-massa.sql e deixe nenhum caixa do tipo CAIXA aberto. Rodar na ordem. O request marcado com [BUG] falha de propósito.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// O sistema só aceita usuário logado: faz login antes de cada request.",
+          "pm.sendRequest({",
+          "    url: pm.collectionVariables.get(\"baseUrl\") + \"/login\",",
+          "    method: \"POST\",",
+          "    header: { \"Content-Type\": \"application/x-www-form-urlencoded\" },",
+          "    body: {",
+          "        mode: \"urlencoded\",",
+          "        urlencoded: [",
+          "            { key: \"username\", value: pm.collectionVariables.get(\"usuario\") },",
+          "            { key: \"password\", value: pm.collectionVariables.get(\"senha\") }",
+          "        ]",
+          "    }",
+          "});"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "01 - Abrir CAIXA com 100,00 (preparação)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Caixa aberto\", function () {",
+              "    pm.expect(pm.response.text()).to.include(\"/caixa/gerenciar/\");",
+              "});",
+              "",
+              "// a resposta termina com o código do caixa: \"...gerenciar/]}15\"",
+              "pm.collectionVariables.set(\"caixaId\", pm.response.text().split(\"}\")[1]);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/caixa",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "caixa"
+          ]
+        },
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "descricao",
+              "value": "Caixa Postman Recebimento",
+              "type": "text"
+            },
+            {
+              "key": "tipo",
+              "value": "CAIXA",
+              "type": "text"
+            },
+            {
+              "key": "valor_abertura",
+              "value": "100,00",
+              "type": "text"
+            },
+            {
+              "key": "agencia",
+              "value": "",
+              "type": "text"
+            },
+            {
+              "key": "conta",
+              "value": "",
+              "type": "text"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "02 - Abrir recebimento da parcela 9001",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Resposta traz o código do recebimento\", function () {",
+              "    pm.expect(pm.response.text()).to.include(\"/recebimento/\");",
+              "});",
+              "",
+              "// a resposta termina com o código: \"{Location=[...recebimento/]}15\"",
+              "pm.collectionVariables.set(\"recTotal\", pm.response.text().split(\"}\")[1]);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/receber/parcelas?codpessoa=1&parcelas=9001",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "receber",
+            "parcelas"
+          ],
+          "query": [
+            {
+              "key": "codpessoa",
+              "value": "1"
+            },
+            {
+              "key": "parcelas",
+              "value": "9001"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "03 - Receber o total (100,00)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Mensagem esperada\", function () {",
+              "    pm.expect(pm.response.text()).to.include(\"Recebimento realizado com sucesso\");",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/recebimento?receber={{recTotal}}&total=&desconto=&acrescimo=&vlrecebido=100.00&titulo={{tituloDinheiro}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "recebimento"
+          ],
+          "query": [
+            {
+              "key": "receber",
+              "value": "{{recTotal}}"
+            },
+            {
+              "key": "total",
+              "value": ""
+            },
+            {
+              "key": "desconto",
+              "value": ""
+            },
+            {
+              "key": "acrescimo",
+              "value": ""
+            },
+            {
+              "key": "vlrecebido",
+              "value": "100.00"
+            },
+            {
+              "key": "titulo",
+              "value": "{{tituloDinheiro}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "04 - Caixa recebeu o lançamento e a trigger somou o saldo",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Saldo total 200,00\", function () {",
+              "    pm.expect(pm.response.text()).to.include(\"200,00\");",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/caixa/gerenciar/{{caixaId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "caixa",
+            "gerenciar",
+            "{{caixaId}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "05 - Não recebe de novo o mesmo recebimento",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 500\", function () {",
+              "    pm.response.to.have.status(500);",
+              "});",
+              "",
+              "pm.test(\"Mensagem esperada\", function () {",
+              "    pm.expect(pm.response.text()).to.include(\"Recebimento já esta fechado\");",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/recebimento?receber={{recTotal}}&total=&desconto=&acrescimo=&vlrecebido=100.00&titulo={{tituloDinheiro}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "recebimento"
+          ],
+          "query": [
+            {
+              "key": "receber",
+              "value": "{{recTotal}}"
+            },
+            {
+              "key": "total",
+              "value": ""
+            },
+            {
+              "key": "desconto",
+              "value": ""
+            },
+            {
+              "key": "acrescimo",
+              "value": ""
+            },
+            {
+              "key": "vlrecebido",
+              "value": "100.00"
+            },
+            {
+              "key": "titulo",
+              "value": "{{tituloDinheiro}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "06 - Parcela quitada não pode ser reaberta",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 500\", function () {",
+              "    pm.response.to.have.status(500);",
+              "});",
+              "",
+              "pm.test(\"Mensagem esperada\", function () {",
+              "    pm.expect(pm.response.text()).to.include(\"Parcela 9005 já esta quitada\");",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/receber/parcelas?codpessoa=1&parcelas=9005",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "receber",
+            "parcelas"
+          ],
+          "query": [
+            {
+              "key": "codpessoa",
+              "value": "1"
+            },
+            {
+              "key": "parcelas",
+              "value": "9005"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "07 - Abrir recebimento da parcela 9002",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Resposta traz o código do recebimento\", function () {",
+              "    pm.expect(pm.response.text()).to.include(\"/recebimento/\");",
+              "});",
+              "",
+              "// a resposta termina com o código: \"{Location=[...recebimento/]}15\"",
+              "pm.collectionVariables.set(\"recParcial\", pm.response.text().split(\"}\")[1]);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/receber/parcelas?codpessoa=1&parcelas=9002",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "receber",
+            "parcelas"
+          ],
+          "query": [
+            {
+              "key": "codpessoa",
+              "value": "1"
+            },
+            {
+              "key": "parcelas",
+              "value": "9002"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "08 - Receber parcial (40,00)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Mensagem esperada\", function () {",
+              "    pm.expect(pm.response.text()).to.include(\"Recebimento realizado com sucesso\");",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/recebimento?receber={{recParcial}}&total=&desconto=&acrescimo=&vlrecebido=40.00&titulo={{tituloDinheiro}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "recebimento"
+          ],
+          "query": [
+            {
+              "key": "receber",
+              "value": "{{recParcial}}"
+            },
+            {
+              "key": "total",
+              "value": ""
+            },
+            {
+              "key": "desconto",
+              "value": ""
+            },
+            {
+              "key": "acrescimo",
+              "value": ""
+            },
+            {
+              "key": "vlrecebido",
+              "value": "40.00"
+            },
+            {
+              "key": "titulo",
+              "value": "{{tituloDinheiro}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "09 - Lista mostra o saldo restante de 60,00",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Restante 60,00\", function () {",
+              "    pm.expect(pm.response.text()).to.include(\"R$ 60,00\");",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/receber?codigo=1&pago=false",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "receber"
+          ],
+          "query": [
+            {
+              "key": "codigo",
+              "value": "1"
+            },
+            {
+              "key": "pago",
+              "value": "false"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "10 - Abrir recebimento das parcelas 9003 e 9004",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Resposta traz o código do recebimento\", function () {",
+              "    pm.expect(pm.response.text()).to.include(\"/recebimento/\");",
+              "});",
+              "",
+              "// a resposta termina com o código: \"{Location=[...recebimento/]}15\"",
+              "pm.collectionVariables.set(\"recVarias\", pm.response.text().split(\"}\")[1]);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/receber/parcelas?codpessoa=1&parcelas=9003, 9004",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "receber",
+            "parcelas"
+          ],
+          "query": [
+            {
+              "key": "codpessoa",
+              "value": "1"
+            },
+            {
+              "key": "parcelas",
+              "value": "9003, 9004"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "11 - Receber 80,00 distribuindo entre as parcelas",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Mensagem esperada\", function () {",
+              "    pm.expect(pm.response.text()).to.include(\"Recebimento realizado com sucesso\");",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/recebimento?receber={{recVarias}}&total=&desconto=&acrescimo=&vlrecebido=80.00&titulo={{tituloDinheiro}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "recebimento"
+          ],
+          "query": [
+            {
+              "key": "receber",
+              "value": "{{recVarias}}"
+            },
+            {
+              "key": "total",
+              "value": ""
+            },
+            {
+              "key": "desconto",
+              "value": ""
+            },
+            {
+              "key": "acrescimo",
+              "value": ""
+            },
+            {
+              "key": "vlrecebido",
+              "value": "80.00"
+            },
+            {
+              "key": "titulo",
+              "value": "{{tituloDinheiro}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "12 - Segunda parcela fica com 20,00",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Restante 20,00\", function () {",
+              "    pm.expect(pm.response.text()).to.include(\"R$ 20,00\");",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/receber?codigo=1&pago=false",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "receber"
+          ],
+          "query": [
+            {
+              "key": "codigo",
+              "value": "1"
+            },
+            {
+              "key": "pago",
+              "value": "false"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "13 - Parcela de outro cliente é recusada",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 500\", function () {",
+              "    pm.response.to.have.status(500);",
+              "});",
+              "",
+              "pm.test(\"Mensagem esperada\", function () {",
+              "    pm.expect(pm.response.text()).to.include(\"A parcela 9006 não pertence ao cliente selecionado\");",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/receber/parcelas?codpessoa=9001&parcelas=9006",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "receber",
+            "parcelas"
+          ],
+          "query": [
+            {
+              "key": "codpessoa",
+              "value": "9001"
+            },
+            {
+              "key": "parcelas",
+              "value": "9006"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "14 - Abrir recebimento da parcela 9006",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Resposta traz o código do recebimento\", function () {",
+              "    pm.expect(pm.response.text()).to.include(\"/recebimento/\");",
+              "});",
+              "",
+              "// a resposta termina com o código: \"{Location=[...recebimento/]}15\"",
+              "pm.collectionVariables.set(\"recValidacao\", pm.response.text().split(\"}\")[1]);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/receber/parcelas?codpessoa=1&parcelas=9006",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "receber",
+            "parcelas"
+          ],
+          "query": [
+            {
+              "key": "codpessoa",
+              "value": "1"
+            },
+            {
+              "key": "parcelas",
+              "value": "9006"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "15 - Valor um centavo acima do total é recusado",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 500\", function () {",
+              "    pm.response.to.have.status(500);",
+              "});",
+              "",
+              "pm.test(\"Mensagem esperada\", function () {",
+              "    pm.expect(pm.response.text()).to.include(\"Valor de recebimento é superior aos títulos\");",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/recebimento?receber={{recValidacao}}&total=&desconto=&acrescimo=&vlrecebido=100.01&titulo={{tituloDinheiro}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "recebimento"
+          ],
+          "query": [
+            {
+              "key": "receber",
+              "value": "{{recValidacao}}"
+            },
+            {
+              "key": "total",
+              "value": ""
+            },
+            {
+              "key": "desconto",
+              "value": ""
+            },
+            {
+              "key": "acrescimo",
+              "value": ""
+            },
+            {
+              "key": "vlrecebido",
+              "value": "100.01"
+            },
+            {
+              "key": "titulo",
+              "value": "{{tituloDinheiro}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "16 - Valor zero é recusado",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 500\", function () {",
+              "    pm.response.to.have.status(500);",
+              "});",
+              "",
+              "pm.test(\"Mensagem esperada\", function () {",
+              "    pm.expect(pm.response.text()).to.include(\"Valor de recebimento inválido\");",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/recebimento?receber={{recValidacao}}&total=&desconto=&acrescimo=&vlrecebido=0.00&titulo={{tituloDinheiro}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "recebimento"
+          ],
+          "query": [
+            {
+              "key": "receber",
+              "value": "{{recValidacao}}"
+            },
+            {
+              "key": "total",
+              "value": ""
+            },
+            {
+              "key": "desconto",
+              "value": ""
+            },
+            {
+              "key": "acrescimo",
+              "value": ""
+            },
+            {
+              "key": "vlrecebido",
+              "value": "0.00"
+            },
+            {
+              "key": "titulo",
+              "value": "{{tituloDinheiro}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "17 - Sem título é recusado",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 500\", function () {",
+              "    pm.response.to.have.status(500);",
+              "});",
+              "",
+              "pm.test(\"Mensagem esperada\", function () {",
+              "    pm.expect(pm.response.text()).to.include(\"Selecione um título para realizar o recebimento\");",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/recebimento?receber={{recValidacao}}&total=&desconto=&acrescimo=&vlrecebido=100.00&titulo=",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "recebimento"
+          ],
+          "query": [
+            {
+              "key": "receber",
+              "value": "{{recValidacao}}"
+            },
+            {
+              "key": "total",
+              "value": ""
+            },
+            {
+              "key": "desconto",
+              "value": ""
+            },
+            {
+              "key": "acrescimo",
+              "value": ""
+            },
+            {
+              "key": "vlrecebido",
+              "value": "100.00"
+            },
+            {
+              "key": "titulo",
+              "value": ""
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "18 - Cancelar recebimento aberto",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Resposta traz a lista de receber\", function () {",
+              "    pm.expect(pm.response.text()).to.include(\"/receber\");",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/recebimento/codigo?codigo={{recValidacao}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "recebimento",
+            "codigo"
+          ],
+          "query": [
+            {
+              "key": "codigo",
+              "value": "{{recValidacao}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "19 - Recebimento processado não pode ser cancelado",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 500\", function () {",
+              "    pm.response.to.have.status(500);",
+              "});",
+              "",
+              "pm.test(\"Mensagem esperada\", function () {",
+              "    pm.expect(pm.response.text()).to.include(\"Esse recebimento não pode ser removido\");",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/recebimento/codigo?codigo={{recTotal}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "recebimento",
+            "codigo"
+          ],
+          "query": [
+            {
+              "key": "codigo",
+              "value": "{{recTotal}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "20 - Cliente com código acima de 127 abre recebimento",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Resposta traz o código do recebimento\", function () {",
+              "    pm.expect(pm.response.text()).to.include(\"/recebimento/\");",
+              "});",
+              "",
+              "// a resposta termina com o código: \"{Location=[...recebimento/]}15\"",
+              "pm.collectionVariables.set(\"recCodigoAlto\", pm.response.text().split(\"}\")[1]);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/receber/parcelas?codpessoa=9001&parcelas=9011",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "receber",
+            "parcelas"
+          ],
+          "query": [
+            {
+              "key": "codpessoa",
+              "value": "9001"
+            },
+            {
+              "key": "parcelas",
+              "value": "9011"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "21 - Abrir recebimento da parcela 9007",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Resposta traz o código do recebimento\", function () {",
+              "    pm.expect(pm.response.text()).to.include(\"/recebimento/\");",
+              "});",
+              "",
+              "// a resposta termina com o código: \"{Location=[...recebimento/]}15\"",
+              "pm.collectionVariables.set(\"recDesconto\", pm.response.text().split(\"}\")[1]);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/receber/parcelas?codpessoa=1&parcelas=9007",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "receber",
+            "parcelas"
+          ],
+          "query": [
+            {
+              "key": "codpessoa",
+              "value": "1"
+            },
+            {
+              "key": "parcelas",
+              "value": "9007"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "22 - Receber 90,00 com desconto de 10,00",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Mensagem esperada\", function () {",
+              "    pm.expect(pm.response.text()).to.include(\"Recebimento realizado com sucesso\");",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/recebimento?receber={{recDesconto}}&total=&desconto=10.00&acrescimo=&vlrecebido=90.00&titulo={{tituloDinheiro}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "recebimento"
+          ],
+          "query": [
+            {
+              "key": "receber",
+              "value": "{{recDesconto}}"
+            },
+            {
+              "key": "total",
+              "value": ""
+            },
+            {
+              "key": "desconto",
+              "value": "10.00"
+            },
+            {
+              "key": "acrescimo",
+              "value": ""
+            },
+            {
+              "key": "vlrecebido",
+              "value": "90.00"
+            },
+            {
+              "key": "titulo",
+              "value": "{{tituloDinheiro}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "23 - [BUG #10] Desconto deveria quitar a parcela",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Parcela 9007 não deveria continuar aberta\", function () {",
+              "    pm.expect(pm.response.text()).to.not.include(\"value=\\\"9007\\\"\");",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/receber?codigo=1&pago=false",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "receber"
+          ],
+          "query": [
+            {
+              "key": "codigo",
+              "value": "1"
+            },
+            {
+              "key": "pago",
+              "value": "false"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "24 - Fechar o CAIXA (limpeza)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Caixa fechado\", function () {",
+              "    pm.expect(pm.response.text()).to.eql(\"Caixa fechado com sucesso\");",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/caixa/fechar",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "caixa",
+            "fechar"
+          ]
+        },
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "caixa",
+              "value": "{{caixaId}}",
+              "type": "text"
+            },
+            {
+              "key": "senha",
+              "value": "{{senha}}",
+              "type": "text"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "usuario",
+      "value": "gerente"
+    },
+    {
+      "key": "senha",
+      "value": "123"
+    },
+    {
+      "key": "tituloDinheiro",
+      "value": "9001"
+    },
+    {
+      "key": "caixaId",
+      "value": ""
+    },
+    {
+      "key": "recTotal",
+      "value": ""
+    },
+    {
+      "key": "recParcial",
+      "value": ""
+    },
+    {
+      "key": "recVarias",
+      "value": ""
+    },
+    {
+      "key": "recValidacao",
+      "value": ""
+    },
+    {
+      "key": "recCodigoAlto",
+      "value": ""
+    },
+    {
+      "key": "recDesconto",
+      "value": ""
+    }
+  ]
+}
