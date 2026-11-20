@@ -1369,3 +1369,13 @@ mudanças feitas pela IA e rodei de novo os testes existentes antes de aceitar.
   ainda usam `java.util.Date` e `java.sql.Timestamp`, e a `CaixaService` precisa converter
   para esses tipos. Zerar essa regra exige mudar o model e o repositório.
 - PIT, JaCoCo, Selenium e a nova análise no Sonar não foram rodados nesta interação.
+
+---
+
+## 17. Entrega 2 de `RecebimentoService`
+
+- **Data:** 02/11/2026
+- **Responsável:** Felipe Ratto
+- **Ferramenta:** Claude Code, modelo Claude Opus 5.5
+
+Registro completo nas entradas 10 a 15 de `docs/ai/AI-LOG-Felipe Ratto.md`.

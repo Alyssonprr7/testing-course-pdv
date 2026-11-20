@@ -578,3 +578,253 @@ provável, Evidência, Responsável), a partir dos dados já registrados nas Evi
 
 - A IA não tem acesso ao repositório para criar as issues diretamente (nem foi autorizada
   a fazer isso nesta interação); o texto gerado precisa ser colado manualmente.
+
+
+---
+## 10. Consultas sobre os casos de teste de `RecebimentoService` (Entrega 2)
+
+- **Data:** 02/11/2026
+- **Responsável:** Felipe Ratto
+- **Ferramenta:** Claude Code, modelo Claude Opus 5.5
+
+**Objetivo**
+
+Tirar dúvidas de técnica (particionamento em classes de equivalência, análise de valor
+limite e conteúdo de um caso de teste) enquanto eu escrevia
+`docs/casos-de-teste/felipe-recebimento.md`. Eu escrevi o documento; a IA não o gerou.
+
+**Prompts utilizados** (resumo das perguntas feitas, não transcrição literal)
+
+> Como divido as entradas de `abrirRecebimento` em classes válidas e inválidas?
+>
+> Para o valor recebido de um total de 100,00, quais são os valores limite?
+>
+> Um caso de teste deve ter ID, entrada e resultado esperado. O que mais devo registrar?
+
+**Resultado**
+
+As respostas serviram de orientação. Os artefatos que ficaram no repositório são meus:
+tabelas de classes válidas e inválidas para `abrirRecebimento` e `receber`, tabela de
+valores limite do valor recebido sobre um total de 100,00 (-0,01, 0,00, 0,01, 100,00 e
+100,01) e casos com ID (`CT-ABR-*`, `CT-REC-*`, `CT-REM-*`), cenário, resultado esperado
+e o teste unitário correspondente.
+
+**Decisão**
+
+Os valores esperados vêm do código e dos testes manuais RC-01 a RC-05, não da resposta
+da IA. Onde o comportamento atual é defeito conhecido, o caso aponta a issue.
+
+**Limitações da IA / observações**
+
+As respostas da IA não foram transcritas neste registro.
+
+---
+
+## 11. Consultas sobre testes unitários, cobertura e mutação
+
+- **Data:** 02/11/2026
+- **Responsável:** Felipe Ratto
+- **Ferramenta:** Claude Code, modelo Claude Opus 5.5
+
+**Objetivo**
+
+Tirar dúvidas ao ampliar `RecebimentoServiceTest.java` (de 31 para 48 testes) e ao ler os
+relatórios do JaCoCo e do PIT. Eu escrevi e ajustei os testes; a IA foi usada para
+consulta.
+
+**Prompts utilizados** (resumo das perguntas feitas, não transcrição literal)
+
+> Quais dependências do `RecebimentoService` devo mockar, e por quê?
+>
+> Meu teste passa, mas dá `UnnecessaryStubbingException`. O que isso quer dizer?
+>
+> Como confirmo com `verify` que `parcelas.receber` foi chamado com o valor certo?
+>
+> Como testo o laço de `receber` quando o valor atravessa duas parcelas?
+>
+> O JaCoCo mostra 22 de 34 branches. Quais ramos faltam?
+>
+> O PIT mostra um mutante sobrevivente em `vlsobra < 0`. É falha do meu teste ou o mutante
+> é equivalente?
+>
+> Como provo que um mutante é equivalente?
+
+**Resultado**
+
+Artefatos que ficaram no repositório (conforme `docs/evidencias/felipe/RELATORIO-ENTREGA2.md`):
+
+- O runner do teste passou de `MockitoJUnitRunner.Silent` para `MockitoJUnitRunner.StrictStubs`.
+- Testes novos para o cenário em que o valor atravessa parcelas
+  (`devePagarPrimeiraParcelaEParteDaSegundaQuandoValorAtravessaParcelas`), a sobra depois
+  da última parcela e a parcela sem saldo.
+- Cobertura de arestas de 22/34 (64,7%) para 34/34 (100%) e escore de mutação do PIT de
+  24/39 (62%) para 40/41 (98%).
+- O único mutante sobrevivente, em `vlsobra = vlsobra < 0 ? 0 : vlsobra` (`<` trocado por
+  `<=`), foi classificado como equivalente: com `vlsobra` igual a zero os dois ramos
+  produzem zero. A justificativa está no relatório.
+
+**Validação**
+
+Os números vêm das execuções de 02/11/2026 (JDK 17, Maven 3.9.9), com os dados brutos em
+`docs/evidencias/felipe/` (`E2-COB-*.csv`, `E2-MUT-*.xml`).
+
+**Limitações da IA / observações**
+
+As respostas da IA não foram transcritas neste registro.
+
+---
+
+## 12. Consultas sobre os apontamentos do Sonar e as correções em `RecebimentoService`
+
+- **Data:** 02/11/2026
+- **Responsável:** Felipe Ratto
+- **Ferramenta:** Claude Code, modelo Claude Opus 5.5
+
+**Objetivo**
+
+Entender os apontamentos do SonarQube sobre `RecebimentoService` antes de corrigi-los. Eu
+fiz as alterações no código; a IA foi usada para tirar dúvidas.
+
+**Prompts utilizados** (resumo das perguntas feitas, não transcrição literal)
+
+> O Sonar aponta `@Autowired` em campo. Por que construtor é melhor, e como mudo sem
+> quebrar os testes?
+>
+> O Sonar reclama de `Optional.get()` sem `isPresent`. Qual a forma idiomática de corrigir?
+>
+> Comparei `Long` com `!=` e falha para códigos acima de 127. Por quê?
+
+**Resultado**
+
+Correções feitas por mim em `RecebimentoService.java`:
+
+| Regra | Qtd. | Correção |
+|---|---|---|
+| `java:S6813` | 9 | Injeção por construtor, com campos `final` |
+| `java:S3655` | 5 | `orElseThrow` com mensagem |
+| `java:S4973` | 1 | `!=` trocado por `equals` na comparação do código da pessoa |
+
+Também removi o `println` e as chamadas soltas a `e.getMessage()`, passando a causa
+original às exceções. Os problemas no Sonar foram de 15 (6 bugs e 9 code smells) para 0.
+
+**Validação**
+
+Os testes foram executados antes e depois da correção (48 testes). Antes: 1 falha, a do
+bug do `Long` com código acima de 127. Depois: todos passam. A comparação por `equals`
+corrige o caso de cliente com código acima de 127, e os testes
+`deveAceitarParcelaDoProprioClienteComCodigoAcimaDe127` e
+`deveExigirTituloQuandoCodigoNulo` cobrem as mudanças de comportamento.
+
+**Limitações da IA / observações**
+
+As respostas da IA não foram transcritas neste registro.
+
+---
+
+## 13. Consultas sobre testes de integração e de sistema
+
+- **Data:** 02/11/2026
+- **Responsável:** Felipe Ratto
+- **Ferramenta:** Claude Code, modelo Claude Opus 5.5
+
+**Objetivo**
+
+Tirar dúvidas de Postman/newman, Selenium e preparação de dados ao montar os testes de
+integração e de sistema de `RecebimentoService`. Eu escrevi a coleção, o teste Selenium e
+a massa; a IA foi usada para consulta.
+
+**Prompts utilizados** (resumo das perguntas feitas, não transcrição literal)
+
+> Como crio uma coleção do Postman com login e variáveis, e a rodo no newman?
+>
+> Meu Selenium trava com um alerta aberto. Como lido com ele?
+>
+> Como preparo o banco com uma massa de teste antes de cada teste?
+
+**Resultado**
+
+Artefatos que ficaram no repositório:
+
+- `postman/recebimento.postman_collection.json`: 24 requests e 42 asserções, executada com
+  newman.
+- `src/test/java/net/originmobi/pdv/selenium/RecebimentoSeleniumTest.java`: 10 testes, com o
+  método `aceitaAlerta()` que espera o alerta, lê o texto e o aceita.
+- `src/test/resources/sql/recebimento-massa.sql`: massa de teste, necessária porque a venda
+  "A Prazo" não gera parcela.
+
+**Validação**
+
+Execuções de 02/11/2026, registradas em `docs/evidencias/felipe/` (`E2-INT-*.txt`,
+`E2-SEL-*`). Antes da correção do Sonar, o newman teve 3 falhas (2 do cliente com código
+acima de 127 e 1 do request 23) e o Selenium teve 1 erro. Depois, o newman teve 1 falha,
+o request 23, que falha de propósito por causa da issue #10, e o Selenium passou nos 10
+testes.
+
+**Limitações da IA / observações**
+
+As respostas da IA não foram transcritas neste registro.
+
+---
+## 14. Organização e indentação do código ao final dos ajustes
+
+- **Data:** _a preencher_
+- **Responsável:** Felipe Ratto
+- **Ferramenta:** _a preencher_
+
+> Registro feito a partir do relato de Felipe Ratto. A interação aconteceu em outra sessão,
+> cujo texto não foi preservado neste repositório.
+
+**Objetivo**
+
+Deixar o código dos ajustes da Entrega 2 organizado e com indentação consistente.
+
+**Prompt utilizado** (resumo)
+
+> Organize os códigos alterados para que fiquem bem indentados.
+
+**Resultado**
+
+A IA reorganizou a formatação dos arquivos alterados, sem mudar o comportamento.
+
+**Validação**
+
+Revisei as alterações de formatação antes de aceitá-las.
+
+---
+
+## 15. Organização dos commits da Entrega 2 de `RecebimentoService`
+
+- **Data:** 20/11/2026
+- **Responsável:** Felipe Ratto
+- **Ferramenta:** Claude Code, modelo Claude Opus 5.5
+
+**Objetivo**
+
+Dividir as alterações da Entrega 2 em commits pequenos e organizados por assunto, sem
+incluir arquivos de configuração local.
+
+**Prompt utilizado** (resumo)
+
+> Vamos commitar os ajustes de forma correta e organizada. Crie um plano de commit para eu
+> validar.
+
+**Resultado**
+
+A IA propôs 6 commits, que eu validei:
+
+1. `fix(recebimento)`: `RecebimentoService` e `RecebimentoServiceTest`, juntos para o build
+   continuar passando, com referência às issues #9 e #21.
+2. `test(recebimento)`: teste Selenium e massa SQL.
+3. `test(recebimento)`: coleção Postman.
+4. `docs(recebimento)`: casos de teste funcional.
+5. `docs(recebimento)`: evidências, relatório e padrão de evidências.
+6. `docs`: AI-LOG e README.
+
+O `docker-compose.yml` ficou fora porque só tem as portas da minha máquina (4445/4446).
+
+**Validação**
+
+Antes dos commits, foi feito o pull do remoto e `RecebimentoServiceTest` rodou com 48 testes
+passando. Conferi autor e arquivos de cada commit com `git log` e `git show --stat`.
+
+---

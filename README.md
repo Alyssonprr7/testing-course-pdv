@@ -19,10 +19,12 @@ Sistema de ERP web desenvolvido em Java com Spring Framework
 
 # Artefatos do trabalho
 - `docs/ai/AI-LOG.md`: registro dos usos de IA
+- [`docs/ai/AI-LOG-Felipe Ratto.md`](docs/ai/AI-LOG-Felipe%20Ratto.md): registro individual de Felipe Ratto
 - `docs/casos-de-teste/`: casos de teste manual, um arquivo por integrante
 - `docs/evidencias/`: evidências de execução, uma pasta por integrante
 - `src/test/java/`: testes unitários e, em `net/originmobi/pdv/selenium/`, os testes de sistema com Selenium (exigem a aplicação rodando em `localhost:8080`)
-- `postman/`: testes de integração no Postman (importe a collection `caixa.postman_collection.json` no Postman e rode)
+- `postman/`: testes de integração no Postman (importe as collections `caixa.postman_collection.json` e `recebimento.postman_collection.json` no Postman e rode)
+- [`docs/evidencias/felipe/RELATORIO-ENTREGA2.md`](docs/evidencias/felipe/RELATORIO-ENTREGA2.md): resultados da Entrega 2 de `RecebimentoService` (cobertura, mutação, integração, sistema e Sonar)
 
 # Recursos
 - Cadastro produtos/clientes/fornecedor
