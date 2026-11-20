@@ -267,7 +267,7 @@ class VendaServiceTest {
     
     /*  ======================================================================
      Os testes inseridos abaixo são resultado da análise do teste de mutação
-     e destinados a eliminar mutantes sobreviventes naquele teste
+     e destinados a eliminar mutantes sobreviventes naquele teste sem uso de IA
      =========================================================================
      */
     

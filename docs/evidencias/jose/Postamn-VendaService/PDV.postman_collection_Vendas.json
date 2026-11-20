@@ -1,0 +1,543 @@
+{
+  "info": {
+    "_postman_id": "2f5527f2-a00b-4118-ba37-b68aa1dea6a6",
+    "name": "PDV",
+    "description": "### Welcome to Postman! This is your first collection. \n\nCollections are your starting point for building and testing APIs. You can use this one to:\n\n• Group related requests\n• Test your API in real-world scenarios\n• Document and share your requests\n\nUpdate the name and overview whenever you’re ready to make it yours.\n\n[Learn more about Postman Collections.](https://learning.postman.com/docs/collections/collections-overview/)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "58227536",
+    "_collection_link": "https://go.postman.co/collection/58227536-2f5527f2-a00b-4118-ba37-b68aa1dea6a6?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "01 - LOGIN",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// Verifica se o cookie JSESSIONID existe na resposta\r\nvar sessionCookie = pm.cookies.get(\"JSESSIONID\");\r\n\r\nif (sessionCookie) {\r\n    // Salva o valor do cookie na variável global 'meu_cookie'\r\n    pm.globals.set(\"meu_cookie\", sessionCookie);\r\n    console.log(\"Cookie salvo automaticamente: \" + sessionCookie);\r\n}"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      },
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "username",
+              "value": "gerente"
+            },
+            {
+              "key": "password",
+              "value": "123"
+            }
+          ]
+        },
+        "url": {
+          "raw": "http://127.0.0.1:8080/login",
+          "protocol": "http",
+          "host": [
+            "127",
+            "0",
+            "0",
+            "1"
+          ],
+          "port": "8080",
+          "path": [
+            "login"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "02 - Abrir venda",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status deve ser 302 Found\", function () {\r\n    pm.response.to.have.status(302);\r\n});\r\n\r\nvar locationHeader = pm.response.headers.get(\"Location\");\r\nif (locationHeader) {\r\n    var partes = locationHeader.split(\"/\");\r\n    var idVenda = partes[partes.length - 1];\r\n    \r\n    // Guarda o ID automaticamente numa variável global/ambiente\r\n    pm.globals.set(\"id_venda_atual\", idVenda);\r\n    console.log(\"ID capturado: \" + idVenda);\r\n}"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      },
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Cookie",
+            "value": "JSESSIONID={{meu_cookie}}",
+            "disabled": true
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "observacao",
+              "value": "Venda de Integraçao API"
+            },
+            {
+              "key": "pessoa",
+              "value": "1"
+            }
+          ]
+        },
+        "url": {
+          "raw": "http://127.0.0.1:8080/venda",
+          "protocol": "http",
+          "host": [
+            "127",
+            "0",
+            "0",
+            "1"
+          ],
+          "port": "8080",
+          "path": [
+            "venda"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "03 - Adicionar produto",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Cookie",
+            "value": "JSESSIONID={{meu_cookie}}",
+            "disabled": true
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "codigoVen",
+              "value": "{{id_venda_atual}}"
+            },
+            {
+              "key": "codigoPro",
+              "value": "1"
+            },
+            {
+              "key": "valorBalanca",
+              "value": "0"
+            }
+          ]
+        },
+        "url": {
+          "raw": "http://127.0.0.1:8080/venda/addproduto",
+          "protocol": "http",
+          "host": [
+            "127",
+            "0",
+            "0",
+            "1"
+          ],
+          "port": "8080",
+          "path": [
+            "venda",
+            "addproduto"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "04 - Listar títulos",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.globals.set(\"id_titulo\", pm.response.json()[0].codigo);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://127.0.0.1:8080/venda/titulos",
+          "protocol": "http",
+          "host": [
+            "127",
+            "0",
+            "0",
+            "1"
+          ],
+          "port": "8080",
+          "path": [
+            "venda",
+            "titulos"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "05 - Fechar  venda",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              ""
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      },
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Cookie",
+            "value": "JSESSIONID={{meu_cookie}}",
+            "disabled": true
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "venda",
+              "value": "{{id_venda_atual}}"
+            },
+            {
+              "key": "pagamentotipo",
+              "value": "1"
+            },
+            {
+              "key": "valor_produtos",
+              "value": "6.50"
+            },
+            {
+              "key": "valor_desconto",
+              "value": "0"
+            },
+            {
+              "key": "valor_acrescimo",
+              "value": "0"
+            },
+            {
+              "key": "valores",
+              "value": "6.50"
+            },
+            {
+              "key": "titulos",
+              "value": "{{id_titulo}}"
+            }
+          ]
+        },
+        "url": {
+          "raw": "http://127.0.0.1:8080/venda/fechar",
+          "protocol": "http",
+          "host": [
+            "127",
+            "0",
+            "0",
+            "1"
+          ],
+          "port": "8080",
+          "path": [
+            "venda",
+            "fechar"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "06 - Consultar venda fechada",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status deve ser 200 OK\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Não redirecionou para tela de login\", function () {\r\n    pm.expect(pm.response.text()).to.not.include(\"PDV - Login\");\r\n});\r\n\r\npm.test(\"Página contém o valor da venda (6,50)\", function () {\r\n    pm.expect(pm.response.text()).to.include(\"6,50\");\r\n});"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      },
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Cookie",
+            "value": "JSESSIONID={{meu_cookie}}",
+            "disabled": true
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": []
+        },
+        "url": {
+          "raw": "http://127.0.0.1:8080/venda/{{id_venda_atual}}",
+          "protocol": "http",
+          "host": [
+            "127",
+            "0",
+            "0",
+            "1"
+          ],
+          "port": "8080",
+          "path": [
+            "venda",
+            "{{id_venda_atual}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "07 - Fechar  venda já fechada",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status deve ser 500 (bloqueio de venda já fechada)\", function () {\r\n    pm.response.to.have.status(500);\r\n});\r\n\r\npm.test(\"Mensagem de erro deve indicar 'venda fechada'\", function () {\r\n    var jsonData = pm.response.json();\r\n    pm.expect(jsonData.message).to.eql(\"venda fechada\");\r\n});"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      },
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Cookie",
+            "value": "JSESSIONID={{meu_cookie}}",
+            "disabled": true
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "venda",
+              "value": "{{id_venda_atual}}"
+            },
+            {
+              "key": "pagamentotipo",
+              "value": "1"
+            },
+            {
+              "key": "valor_produtos",
+              "value": "6.50"
+            },
+            {
+              "key": "valor_desconto",
+              "value": "0"
+            },
+            {
+              "key": "valor_acrescimo",
+              "value": "0"
+            },
+            {
+              "key": "valores",
+              "value": "6.50"
+            },
+            {
+              "key": "titulos",
+              "value": "{{id_titulo}}"
+            }
+          ]
+        },
+        "url": {
+          "raw": "http://127.0.0.1:8080/venda/fechar",
+          "protocol": "http",
+          "host": [
+            "127",
+            "0",
+            "0",
+            "1"
+          ],
+          "port": "8080",
+          "path": [
+            "venda",
+            "fechar"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "08 - Abrir nova venda",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status deve ser 302 Found\", function () {\r\n    pm.response.to.have.status(302);\r\n});\r\n\r\nvar locationHeader = pm.response.headers.get(\"Location\");\r\nif (locationHeader) {\r\n    var partes = locationHeader.split(\"/\");\r\n    var idVenda = partes[partes.length - 1];\r\n    \r\n    // Guarda o ID automaticamente numa variável global/ambiente\r\n    pm.globals.set(\"id_venda_atual\", idVenda);\r\n    console.log(\"ID capturado: \" + idVenda);\r\n}"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      },
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Cookie",
+            "value": "JSESSIONID={{meu_cookie}}",
+            "disabled": true
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "observacao",
+              "value": "Venda de Integraçao API"
+            },
+            {
+              "key": "pessoa",
+              "value": "1"
+            }
+          ]
+        },
+        "url": {
+          "raw": "http://127.0.0.1:8080/venda",
+          "protocol": "http",
+          "host": [
+            "127",
+            "0",
+            "0",
+            "1"
+          ],
+          "port": "8080",
+          "path": [
+            "venda"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "09 - Adicionar produto na nova compra",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Cookie",
+            "value": "JSESSIONID={{meu_cookie}}",
+            "disabled": true
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "codigoVen",
+              "value": "{{id_venda_atual}}"
+            },
+            {
+              "key": "codigoPro",
+              "value": "1"
+            },
+            {
+              "key": "valorBalanca",
+              "value": "0"
+            }
+          ]
+        },
+        "url": {
+          "raw": "http://127.0.0.1:8080/venda/addproduto",
+          "protocol": "http",
+          "host": [
+            "127",
+            "0",
+            "0",
+            "1"
+          ],
+          "port": "8080",
+          "path": [
+            "venda",
+            "addproduto"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "10 - Remover produto da venda",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status deve ser 200 OK\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Resposta deve confirmar remoção com 'ok'\", function () {\r\n    pm.expect(pm.response.text().trim()).to.eql(\"ok\");\r\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "posicaoPro",
+              "value": "1"
+            },
+            {
+              "key": "codigoVen",
+              "value": "{{id_venda_atual}}"
+            }
+          ]
+        },
+        "url": {
+          "raw": "http://127.0.0.1:8080/venda/removeproduto",
+          "protocol": "http",
+          "host": [
+            "127",
+            "0",
+            "0",
+            "1"
+          ],
+          "port": "8080",
+          "path": [
+            "venda",
+            "removeproduto"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}
