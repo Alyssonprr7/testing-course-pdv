@@ -8,6 +8,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -17,7 +18,6 @@ import java.lang.reflect.Field;
 import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import org.junit.After;
@@ -39,6 +39,8 @@ import net.originmobi.pdv.enumerado.caixa.TipoLancamento;
 import net.originmobi.pdv.model.Caixa;
 import net.originmobi.pdv.model.CaixaLancamento;
 import net.originmobi.pdv.model.Parcela;
+import net.originmobi.pdv.model.Pessoa;
+import net.originmobi.pdv.model.Receber;
 import net.originmobi.pdv.model.Recebimento;
 import net.originmobi.pdv.model.Titulo;
 import net.originmobi.pdv.model.TituloTipo;
@@ -46,11 +48,14 @@ import net.originmobi.pdv.model.Usuario;
 import net.originmobi.pdv.repository.RecebimentoRepository;
 import net.originmobi.pdv.service.cartao.CartaoLancamentoService;
 
-@RunWith(MockitoJUnitRunner.Silent.class)
+@RunWith(MockitoJUnitRunner.StrictStubs.class)
 public class RecebimentoServiceTest {
 
 	@Mock
 	private RecebimentoRepository recebimentos;
+
+	@Mock
+	private PessoaService pessoas;
 
 	@Mock
 	private RecebimentoParcelaService receParcelas;
@@ -105,7 +110,6 @@ public class RecebimentoServiceTest {
 		Recebimento recebimento = criaRecebimento(100.0);
 		recebimento.setData_processamento(new Timestamp(System.currentTimeMillis()));
 		when(recebimentos.findById(1L)).thenReturn(Optional.of(recebimento));
-		when(titulos.busca(1L)).thenReturn(Optional.of(criaTitulo("DIN")));
 
 		thrown.expect(RuntimeException.class);
 		thrown.expectMessage("Recebimento já esta fechado");
@@ -396,38 +400,37 @@ public class RecebimentoServiceTest {
 	// (validação de entrada), os testes precisam ser atualizados.
 
 	@Test
-	public void deveLancarNullPointerQuandoTituloNulo() {
-		// codtitulo == 0 é avaliado antes de codtitulo == null, e o desembrulho do
-		// Long nulo lança NullPointerException em vez da mensagem de título obrigatório
-		thrown.expect(NullPointerException.class);
+	public void deveExigirTituloQuandoCodigoNulo() {
+		// o nulo é verificado antes do zero, então a validação deixou de ser código morto (issue #9)
+		thrown.expect(RuntimeException.class);
+		thrown.expectMessage("Selecione um título para realizar o recebimento");
 
 		recebimentoService.receber(1L, 100.0, 0.0, 0.0, null);
 	}
 
 	@Test
-	public void deveLancarNoSuchElementQuandoRecebimentoInexistente() {
-		// findById retorna Optional vazio e o service chama .get() sem validar
+	public void deveLancarExcecaoQuandoRecebimentoInexistente() {
 		when(recebimentos.findById(1L)).thenReturn(Optional.empty());
-		when(titulos.busca(1L)).thenReturn(Optional.of(criaTitulo("DIN")));
 
-		thrown.expect(NoSuchElementException.class);
+		thrown.expect(RuntimeException.class);
+		thrown.expectMessage("Recebimento não encontrado");
 
 		recebimentoService.receber(1L, 100.0, 0.0, 0.0, 1L);
 	}
 
 	@Test
-	public void deveLancarNoSuchElementQuandoTituloInexistente() {
-		// o título não é encontrado, mas o service faz titulo.get() para vinculá-lo
+	public void deveLancarExcecaoQuandoTituloInexistente() {
 		when(recebimentos.findById(1L)).thenReturn(Optional.of(criaRecebimento(100.0)));
 		when(titulos.busca(1L)).thenReturn(Optional.empty());
 
-		thrown.expect(NoSuchElementException.class);
+		thrown.expect(RuntimeException.class);
+		thrown.expectMessage("Título não encontrado");
 
 		recebimentoService.receber(1L, 100.0, 0.0, 0.0, 1L);
 	}
 
 	@Test
-	public void deveLancarNoSuchElementQuandoNaoHaCaixaAbertoPossivelBug() {
+	public void deveLancarExcecaoQuandoNaoHaCaixaAbertoPossivelBug() {
 		when(recebimentos.findById(1L)).thenReturn(Optional.of(criaRecebimento(100.0)));
 		when(titulos.busca(1L)).thenReturn(Optional.of(criaTitulo("DIN")));
 		when(receParcelas.parcelasDoReceber(1L)).thenReturn(Arrays.asList(criaParcela(1L, 100.0)));
@@ -436,9 +439,9 @@ public class RecebimentoServiceTest {
 
 		try {
 			recebimentoService.receber(1L, 100.0, 0.0, 0.0, 1L);
-			fail("Deveria ter lançado NoSuchElementException");
-		} catch (NoSuchElementException e) {
-			// esperado: caixa.get() sem verificar se há caixa aberto
+			fail("Deveria recusar o recebimento sem caixa aberto");
+		} catch (RuntimeException e) {
+			assertEquals("Nenhum caixa aberto", e.getMessage());
 		}
 
 		// o problema: a ausência de caixa só é detectada depois de a parcela já ter
@@ -504,8 +507,7 @@ public class RecebimentoServiceTest {
 
 	@Test
 	public void deveReceberNoCartaoSemConsultarCaixaAberto() {
-		// não há caixa aberto, mas recebimento no cartão não depende de caixa
-		when(caixas.caixaAberto()).thenReturn(Optional.empty());
+		// recebimento no cartão não depende de caixa aberto
 		when(recebimentos.findById(1L)).thenReturn(Optional.of(criaRecebimento(100.0)));
 		when(titulos.busca(1L)).thenReturn(Optional.of(criaTitulo("CARTCRED")));
 		when(receParcelas.parcelasDoReceber(1L)).thenReturn(Arrays.asList(criaParcela(1L, 100.0)));
@@ -561,6 +563,235 @@ public class RecebimentoServiceTest {
 		assertEquals("Recebimento realizado com sucesso", retorno);
 	}
 
+	// ------------------------------------------- receber: laço de parcelas
+
+	@Test
+	public void deveEncerrarLacoQuandoSobraValorDepoisDaUltimaParcela() {
+		// total do recebimento maior que a soma das parcelas: a sobra não pode estourar a lista
+		when(recebimentos.findById(1L)).thenReturn(Optional.of(criaRecebimento(100.0)));
+		when(titulos.busca(1L)).thenReturn(Optional.of(criaTitulo("DIN")));
+		when(receParcelas.parcelasDoReceber(1L)).thenReturn(Arrays.asList(criaParcela(1L, 50.0)));
+
+		String retorno = recebimentoService.receber(1L, 100.0, 0.0, 0.0, 1L);
+
+		assertEquals("Recebimento realizado com sucesso", retorno);
+		verify(parcelas).receber(1L, 50.0, 0.0, 0.0);
+	}
+
+	@Test
+	public void deveRepassarZeroPositivoQuandoParcelaNaoTemSaldoRestante() {
+		// restante zero: nada é quitado na primeira parcela e o valor segue para a próxima
+		when(recebimentos.findById(1L)).thenReturn(Optional.of(criaRecebimento(50.0)));
+		when(titulos.busca(1L)).thenReturn(Optional.of(criaTitulo("DIN")));
+		when(receParcelas.parcelasDoReceber(1L))
+				.thenReturn(Arrays.asList(criaParcela(1L, 0.0), criaParcela(2L, 50.0)));
+
+		recebimentoService.receber(1L, 50.0, 0.0, 0.0, 1L);
+
+		verify(parcelas).receber(1L, 0.0, 0.0, 0.0);
+		verify(parcelas).receber(2L, 50.0, 0.0, 0.0);
+	}
+
+	// ------------------------------------------- abrirRecebimento
+
+	@Test
+	public void deveAbrirRecebimentoComUmaParcela() {
+		Parcela parcela = criaParcelaDoCliente(5L, 100.0, 1L);
+		Pessoa cliente = parcela.getReceber().getPessoa();
+		when(parcelas.busca(5L)).thenReturn(parcela);
+		when(pessoas.buscaPessoa(1L)).thenReturn(Optional.of(cliente));
+		atribuiCodigoAoSalvar(7L);
+
+		String retorno = recebimentoService.abrirRecebimento(1L, new String[] { "5" });
+
+		assertEquals("7", retorno);
+		ArgumentCaptor<Recebimento> salvo = ArgumentCaptor.forClass(Recebimento.class);
+		verify(recebimentos).save(salvo.capture());
+		assertEquals(100.0, salvo.getValue().getValor_total(), 0.0);
+		assertSame(cliente, salvo.getValue().getPessoa());
+		assertEquals(Arrays.asList(parcela), salvo.getValue().getParcela());
+		assertNotNull(salvo.getValue().getData_cadastro());
+	}
+
+	@Test
+	public void deveSomarRestanteDeTodasAsParcelasAoAbrirRecebimento() {
+		Parcela primeira = criaParcelaDoCliente(5L, 60.5, 1L);
+		Parcela segunda = criaParcelaDoCliente(6L, 39.5, 1L);
+		when(parcelas.busca(5L)).thenReturn(primeira);
+		doReturn(segunda).when(parcelas).busca(6L);
+		when(pessoas.buscaPessoa(1L)).thenReturn(Optional.of(primeira.getReceber().getPessoa()));
+		atribuiCodigoAoSalvar(7L);
+
+		recebimentoService.abrirRecebimento(1L, new String[] { "5", "6" });
+
+		ArgumentCaptor<Recebimento> salvo = ArgumentCaptor.forClass(Recebimento.class);
+		verify(recebimentos).save(salvo.capture());
+		assertEquals(100.0, salvo.getValue().getValor_total(), 0.0);
+		assertEquals(Arrays.asList(primeira, segunda), salvo.getValue().getParcela());
+	}
+
+	@Test
+	public void deveAbrirRecebimentoComTotalZeroQuandoListaDeParcelasVazia() {
+		// classe "nenhuma parcela": o service não valida; a tela sempre envia ao menos um código
+		when(pessoas.buscaPessoa(1L)).thenReturn(Optional.of(new Pessoa()));
+		atribuiCodigoAoSalvar(7L);
+
+		String retorno = recebimentoService.abrirRecebimento(1L, new String[] {});
+
+		assertEquals("7", retorno);
+		ArgumentCaptor<Recebimento> salvo = ArgumentCaptor.forClass(Recebimento.class);
+		verify(recebimentos).save(salvo.capture());
+		assertEquals(0.0, salvo.getValue().getValor_total(), 0.0);
+		assertEquals(Collections.<Parcela>emptyList(), salvo.getValue().getParcela());
+	}
+
+	@Test
+	public void deveLancarExcecaoAoAbrirRecebimentoComParcelaQuitada() {
+		Parcela parcela = criaParcelaDoCliente(5L, 0.0, 1L);
+		parcela.setQuitado(1);
+		when(parcelas.busca(5L)).thenReturn(parcela);
+
+		try {
+			recebimentoService.abrirRecebimento(1L, new String[] { "5" });
+			fail("deveria recusar parcela quitada");
+		} catch (RuntimeException e) {
+			assertEquals("Parcela 5 já esta quitada, verifique.", e.getMessage());
+		}
+		verify(recebimentos, never()).save(any(Recebimento.class));
+	}
+
+	@Test
+	public void deveInterromperAberturaQuandoSegundaParcelaEstaQuitada() {
+		Parcela quitada = criaParcelaDoCliente(6L, 0.0, 1L);
+		quitada.setQuitado(1);
+		when(parcelas.busca(5L)).thenReturn(criaParcelaDoCliente(5L, 10.0, 1L));
+		doReturn(quitada).when(parcelas).busca(6L);
+
+		try {
+			recebimentoService.abrirRecebimento(1L, new String[] { "5", "6" });
+			fail("deveria recusar a lista com parcela quitada");
+		} catch (RuntimeException e) {
+			assertEquals("Parcela 6 já esta quitada, verifique.", e.getMessage());
+		}
+		verify(recebimentos, never()).save(any(Recebimento.class));
+	}
+
+	@Test
+	public void deveLancarExcecaoAoAbrirRecebimentoComParcelaDeOutroCliente() {
+		when(parcelas.busca(5L)).thenReturn(criaParcelaDoCliente(5L, 100.0, 2L));
+
+		try {
+			recebimentoService.abrirRecebimento(1L, new String[] { "5" });
+			fail("deveria recusar parcela de outro cliente");
+		} catch (RuntimeException e) {
+			assertEquals("A parcela 5 não pertence ao cliente selecionado", e.getMessage());
+		}
+		verify(recebimentos, never()).save(any(Recebimento.class));
+	}
+
+	@Test
+	public void deveAceitarParcelaDoProprioClienteComCodigoAcimaDe127() {
+		// O código é Long. Acima de 127 duas instâncias iguais não são o mesmo objeto, então a
+		// comparação precisa ser por valor, e não por referência
+		Parcela parcela = criaParcelaDoCliente(5L, 100.0, Long.valueOf(200L));
+		when(parcelas.busca(5L)).thenReturn(parcela);
+		when(pessoas.buscaPessoa(Long.valueOf(200L))).thenReturn(Optional.of(parcela.getReceber().getPessoa()));
+		atribuiCodigoAoSalvar(7L);
+
+		String retorno = recebimentoService.abrirRecebimento(Long.valueOf(200L), new String[] { "5" });
+
+		assertEquals("7", retorno);
+	}
+
+	@Test
+	public void deveLancarExcecaoAoAbrirRecebimentoComClienteInexistente() {
+		when(parcelas.busca(5L)).thenReturn(criaParcelaDoCliente(5L, 100.0, 1L));
+		when(pessoas.buscaPessoa(1L)).thenReturn(Optional.empty());
+
+		try {
+			recebimentoService.abrirRecebimento(1L, new String[] { "5" });
+			fail("deveria recusar cliente inexistente");
+		} catch (RuntimeException e) {
+			assertEquals("Cliente não encontrado", e.getMessage());
+		}
+		verify(recebimentos, never()).save(any(Recebimento.class));
+	}
+
+	@Test
+	public void deveLancarExcecaoAoAbrirRecebimentoQuandoRestanteDaParcelaNulo() {
+		when(parcelas.busca(5L)).thenReturn(criaParcelaDoCliente(5L, null, 1L));
+
+		thrown.expect(RuntimeException.class);
+		thrown.expectMessage("Erro ao receber, chame o suporte");
+
+		recebimentoService.abrirRecebimento(1L, new String[] { "5" });
+	}
+
+	@Test
+	public void deveLancarExcecaoQuandoFalhaAoSalvarRecebimentoAberto() {
+		Parcela parcela = criaParcelaDoCliente(5L, 100.0, 1L);
+		when(parcelas.busca(5L)).thenReturn(parcela);
+		when(pessoas.buscaPessoa(1L)).thenReturn(Optional.of(parcela.getReceber().getPessoa()));
+		doThrow(new RuntimeException("falha no banco")).when(recebimentos).save(any(Recebimento.class));
+
+		thrown.expect(RuntimeException.class);
+		thrown.expectMessage("Erro ao receber, chame o suporte");
+
+		recebimentoService.abrirRecebimento(1L, new String[] { "5" });
+	}
+
+	@Test(expected = NumberFormatException.class)
+	public void deveLancarNumberFormatQuandoCodigoDaParcelaInvalido() {
+		recebimentoService.abrirRecebimento(1L, new String[] { "abc" });
+	}
+
+	// ------------------------------------------- remover
+
+	@Test
+	public void deveRemoverRecebimentoNaoProcessado() {
+		when(recebimentos.findById(1L)).thenReturn(Optional.of(criaRecebimento(100.0)));
+
+		String retorno = recebimentoService.remover(1L);
+
+		assertEquals("removido com sucesso", retorno);
+		verify(recebimentos).deleteById(1L);
+	}
+
+	@Test
+	public void deveLancarExcecaoAoRemoverRecebimentoProcessado() {
+		Recebimento recebimento = criaRecebimento(100.0);
+		recebimento.setData_processamento(new Timestamp(System.currentTimeMillis()));
+		when(recebimentos.findById(1L)).thenReturn(Optional.of(recebimento));
+
+		try {
+			recebimentoService.remover(1L);
+			fail("deveria recusar recebimento processado");
+		} catch (RuntimeException e) {
+			assertEquals("Esse recebimento não pode ser removido, pois ele já esta processado", e.getMessage());
+		}
+		verify(recebimentos, never()).deleteById(anyLong());
+	}
+
+	@Test
+	public void deveLancarExcecaoQuandoFalhaAoRemoverRecebimento() {
+		when(recebimentos.findById(1L)).thenReturn(Optional.of(criaRecebimento(100.0)));
+		doThrow(new RuntimeException("falha no banco")).when(recebimentos).deleteById(1L);
+
+		thrown.expect(RuntimeException.class);
+		thrown.expectMessage("Erro ao remover orçamento, chame o suporte");
+
+		recebimentoService.remover(1L);
+	}
+
+	@Test
+	public void deveTentarRemoverMesmoQuandoRecebimentoNaoExiste() {
+		// sem recebimento não há data de processamento, então a exclusão segue para o repositório
+		when(recebimentos.findById(1L)).thenReturn(Optional.empty());
+
+		assertEquals("removido com sucesso", recebimentoService.remover(1L));
+		verify(recebimentos).deleteById(1L);
+	}
+
 	// ------------------------------------------- helpers
 
 	private Recebimento criaRecebimento(Double valorTotal) {
@@ -575,6 +806,27 @@ public class RecebimentoServiceTest {
 		parcela.setCodigo(codigo);
 		parcela.setValor_restante(valorRestante);
 		return parcela;
+	}
+
+	private Parcela criaParcelaDoCliente(Long codigo, Double valorRestante, Long codCliente) {
+		Pessoa cliente = new Pessoa();
+		cliente.setCodigo(codCliente);
+
+		Receber receber = new Receber();
+		receber.setPessoa(cliente);
+
+		Parcela parcela = criaParcela(codigo, valorRestante);
+		parcela.setReceber(receber);
+		return parcela;
+	}
+
+	// o repositório real preenche o código ao salvar, e o service depende dele no retorno
+	private void atribuiCodigoAoSalvar(Long codigo) {
+		when(recebimentos.save(any(Recebimento.class))).thenAnswer(chamada -> {
+			Recebimento recebimento = chamada.getArgument(0);
+			recebimento.setCodigo(codigo);
+			return recebimento;
+		});
 	}
 
 	private Titulo criaTitulo(String sigla) {
