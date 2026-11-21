@@ -1379,3 +1379,83 @@ mudanças feitas pela IA e rodei de novo os testes existentes antes de aceitar.
 - **Ferramenta:** Claude Code, modelo Claude Opus 5.5
 
 Registro completo nas entradas 10 a 15 de `docs/ai/AI-LOG-Felipe Ratto.md`.
+
+---
+
+## 18. Teste não funcional de desempenho (JMeter) de Sangria / Suprimento e minha parte do relatório
+
+- **Data:** 20/11/2026
+- **Responsável:** Bruno
+- **Atividade:** Entrega 2 — teste de sistema de requisito não funcional (extra da divisão do
+  grupo) e redação da minha parte do relatório da Entrega 2
+- **Ferramenta:** Claude (Claude Code)
+
+**Objetivo**
+
+Avaliar a eficiência de desempenho (comportamento em relação ao tempo) das operações de
+sangria e suprimento sob uso simultâneo, e verificar se o saldo do caixa continua íntegro
+com vários lançamentos ao mesmo tempo. A seção 3 do relatório atribui ao sistema "tempo
+médio de resposta < 200 ms em operações de caixa", mas nenhum teste do grupo media isso.
+
+**Prompt utilizado (melhorado para clareza)**
+
+> Crie um teste não funcional de desempenho com JMeter para sangria e suprimento: vários
+> usuários simultâneos lançando no mesmo caixa, com critérios de aceitação de tempo de
+> resposta, taxa de erro e saldo final correto. O plano deve abrir e fechar o próprio caixa
+> e rodar pela linha de comando. Depois, redija a minha parte do relatório da Entrega 2 a
+> partir do repositório, sem inventar números.
+
+**Resultado**
+
+`jmeter/sangria-suprimento.jmx` (Apache JMeter 5.6.3), executado sem interface gráfica:
+
+- **setUp:** login como gerente e abertura de um caixa com R$ 1.000,00.
+- **Carga:** 20 usuários simultâneos (rampa de 10 s), 25 rodadas cada, com 1 suprimento e
+  1 sangria de R$ 1,00 por rodada: 1.000 lançamentos.
+- **tearDown:** confere na tela do caixa que o saldo voltou a R$ 1.000,00, que as entradas
+  somam R$ 1.500,00 e as saídas R$ 500,00, e fecha o caixa.
+- **Critérios de aceitação:** p95 < 200 ms por operação, 0% de erro e saldo final correto.
+
+| Operação | Amostras | Erro | Média | p95 | Máximo |
+|---|---|---|---|---|---|
+| Suprimento R$ 1,00 | 500 | 0% | 9,1 ms | 20 ms | 26 ms |
+| Sangria R$ 1,00 | 500 | 0% | 8,8 ms | 18 ms | 23 ms |
+
+Vazão de cerca de 100 lançamentos por segundo. Saldo, entradas e saídas finais exatamente
+os esperados: nenhum lançamento se perdeu sob concorrência.
+
+**Solução inicial da IA x solução final**
+
+- **Login por usuário virtual.** Na primeira versão, cada usuário virtual fazia o próprio
+  login como gerente. Cerca de 9% dos lançamentos falharam com HTTP 302. Investigando: o
+  `SecurityConfig` define `maximumSessions(1)`, então cada novo login do gerente derrubava
+  a sessão do anterior, que era redirecionado para `/login?expired`. As falhas aconteceram
+  só durante a rampa de logins, e só nas threads que já tinham entrado. **Não é defeito do
+  sistema**, é um controle de segurança (uma sessão por usuário), e o erro estava no
+  desenho do teste. Na versão final, o login é feito uma vez no setUp e a carga reaproveita
+  essa sessão autenticada.
+- **Erros da IA no script do plano:** um `<<` do Groovy dentro do XML do `.jmx` impediu o
+  JMeter de carregar o plano, e a primeira versão do script que lê o cookie de sessão usou
+  a API errada do `CookieManager` (o que fez 100% dos lançamentos falharem). Os dois foram
+  corrigidos depois de ler o log do JMeter.
+
+**Decisão:** aceitei o plano final. O compartilhamento da sessão é uma limitação conhecida:
+o servidor recebe a mesma carga, mas todos os lançamentos são de um único usuário logado. Um
+cenário com vários operadores exigiria cadastrar um usuário por usuário virtual.
+
+**Validação:** conferi cada execução no relatório HTML do JMeter e no log da asserção
+final (valores esperados x obtidos na tela do caixa), e confirmei no banco que nenhum caixa
+ficou aberto depois do teste. Evidências `E2-NF` em `docs/evidencias/bruno/`, incluindo o
+CSV com as 1.005 amostras.
+
+**Relatório:** a IA redigiu o texto das minhas seções do relatório da Entrega 2 (unitários,
+técnica funcional, estrutural, mutação, Selenium, não funcional e Sonar) com os números do
+repositório e das entradas 14 e 15. Revisei e colei no Google Docs com a minha conta.
+
+**Limitações da IA / observações**
+
+- Os tempos foram medidos com a aplicação e o banco em Docker na mesma máquina do JMeter,
+  sem rede entre eles. Valem como referência, não como medida de produção.
+- Na revisão do relatório, a IA apontou que a seção 3 (ISO 25010) lista 8 características
+  com os nomes da versão de 2011, enquanto a ISO/IEC 25010:2023 tem 9, e cita evidências
+  que não existem no repositório. Isso foi levado ao grupo.

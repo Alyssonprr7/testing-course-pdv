@@ -43,6 +43,7 @@ E2-<TIPO> - <Classe> <momento>.<extensão>
 | `SEL` | Execução dos testes de sistema (Selenium) |
 | `INT` | Execução dos testes de integração (Postman / newman) |
 | `UNI` | Execução dos testes unitários, quando o log é a evidência (ex.: falha que revela bug) |
+| `NF` | Teste não funcional (ex.: desempenho com JMeter) |
 
 O momento é `antes sonar` ou `depois sonar`, porque as correções do Sonar alteram
 o código e mudam os números de cobertura e mutação. Quando houver medição antes de os testes
