@@ -50,11 +50,11 @@ public class VendasTestSelenium {
 	            By.xpath("//*[contains(text(), 'Usuário: gerente')]")
 	        ));
 	    
-	    
+	    /*
 	    desabilitarControleDeEstoque();
 	    cadastrarTituloVendaAVista();
 	    abrirCaixa();  
-	    
+	    */
 	    
 	    // 3. Limpa os cookies para deslogar e permitir que o testAberturaPagina (Order 1) funcione
 	    navegador.manage().deleteAllCookies();
