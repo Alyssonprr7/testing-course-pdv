@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -36,6 +38,8 @@ import net.originmobi.pdv.utilitarios.DataAtual;
 
 @Service
 public class VendaService {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(VendaService.class);
 
 	@Autowired
 	private VendaRepository vendas;
@@ -70,7 +74,7 @@ public class VendaService {
 	@Autowired
 	private ProdutoService produtos;
 
-	private Timestamp dataHoraAtual = new Timestamp(System.currentTimeMillis());
+	private final Timestamp dataHoraAtual = new Timestamp(System.currentTimeMillis());
 
 	public Long abreVenda(Venda venda) {
 		if (venda.getCodigo() == null) {
@@ -190,7 +194,7 @@ public class VendaService {
 		try {
 			receberServ.cadastrar(receber);
 		} catch (Exception e) {
-			System.out.println(e);
+			LOGGER.error("Erro ao cadastrar recebimento da venda", e);
 			throw new RuntimeException("Erro ao fechar a venda, chame o suporte");
 		}
 
@@ -210,16 +214,16 @@ public class VendaService {
 					if (!caixas.caixaIsAberto())
 						throw new RuntimeException("nenhum caixa aberto");
 
-					qtdVezes = avistaDinheiro(vlprodutos, vlParcelas, formaPagar, qtdVezes, i, desc, acre);
+					qtdVezes = avistaDinheiro(vlprodutos, vlParcelas, qtdVezes, i, desc, acre);
 				}
 
 				// se for no cartão de debito ou crédito
 				else if (titulo.get().getTipo().getSigla().equals(TituloTipo.CARTDEB.toString())
 						|| titulo.get().getTipo().getSigla().equals(TituloTipo.CARTCRED.toString())) {
 
-					Double vl_parcela = Double.valueOf(vlParcelas[i]);
+					Double vlParcela = Double.valueOf(vlParcelas[i]);
 
-					cartaoLancamento.lancamento(vl_parcela, titulo);
+					cartaoLancamento.lancamento(vlParcela, titulo);
 				}
 
 			} else {
@@ -229,8 +233,7 @@ public class VendaService {
 					throw new RuntimeException("Venda sem cliente, verifique");
 
 				// no dinheiro
-				sequencia = aprazo(vlprodutos, vlParcelas, dataAtual, formaPagar, qtdVezes, sequencia, receber, i, desc,
-						acre);
+				sequencia = aprazo(vlParcelas, dataAtual, formaPagar, sequencia, receber, i, desc, acre);
 			}
 
 			try {
@@ -239,7 +242,7 @@ public class VendaService {
 				vendas.fechaVenda(venda, VendaSituacao.FECHADA, vlFinal, desconto, acrescimo,
 						dataAtual.dataAtualTimeStamp(), formaPagamento);
 			} catch (Exception e) {
-				System.out.println(e);
+				LOGGER.error("Erro ao fechar a venda no repositório", e);
 				throw new RuntimeException("Erro ao fechar a venda, chame o suporte");
 			}
 
@@ -255,7 +258,7 @@ public class VendaService {
 	 * Responsável por realizar o lançamento quando a parcela da venda é a prazo
 	 * 
 	 */
-	private int aprazo(Double vlprodutos, String[] vlParcelas, DataAtual dataAtual, String[] formaPagar, int qtdVezes,
+	private int aprazo(String[] vlParcelas, DataAtual dataAtual, String[] formaPagar,
 			int sequencia, Receber receber, int i, Double acre, Double desc) {
 
 		if (vlParcelas[i].isEmpty()) {
@@ -263,8 +266,8 @@ public class VendaService {
 		}
 
 		try {
-			Double valor_parcela = (Double.valueOf(vlParcelas[i]) + acre) - desc;
-			parcelas.gerarParcela(valor_parcela, 0.00, 0.00, 0.0, valor_parcela, receber, 0, sequencia,
+			Double valorParcela = (Double.valueOf(vlParcelas[i]) + acre) - desc;
+			parcelas.gerarParcela(valorParcela, 0.00, 0.00, 0.0, valorParcela, receber, 0, sequencia,
 					dataAtual.dataAtualTimeStamp(),
 					Date.valueOf(dataAtual.DataAtualIncrementa(Integer.parseInt(formaPagar[i]))));
 
@@ -282,7 +285,7 @@ public class VendaService {
 	 * no dinheiro
 	 * 
 	 */
-	private int avistaDinheiro(Double vlprodutos, String[] vlParcelas, String[] formaPagar, int qtdVezes, int i,
+	private int avistaDinheiro(Double vlprodutos, String[] vlParcelas, int qtdVezes, int i,
 			Double acre, Double desc) {
 
 		// decremento ela para usa-la no a prazo, sem a sequencia do a
@@ -306,20 +309,20 @@ public class VendaService {
 		Aplicacao aplicacao = Aplicacao.getInstancia();
 		Usuario usuario = usuarios.buscaUsuario(aplicacao.getUsuarioAtual());
 
-		Double valor_parcela = (Double.valueOf(vlParcelas[i]) + acre) - desc;
-		CaixaLancamento lancamento = new CaixaLancamento("Recebimento de venda á vista", valor_parcela,
+		Double valorParcela = (Double.valueOf(vlParcelas[i]) + acre) - desc;
+		CaixaLancamento lancamento = new CaixaLancamento("Recebimento de venda á vista", valorParcela,
 				TipoLancamento.RECEBIMENTO, EstiloLancamento.ENTRADA, caixa.get(), usuario);
 
 		try {
 			lancamentos.lancamento(lancamento);
 		} catch (Exception e) {
-			System.out.println(e);
+			LOGGER.error("Erro ao realizar lançamento no caixa", e);
 			throw new RuntimeException("Erro ao fechar a venda, chame o suporte");
 		}
 		return qtdVezes;
 	}
 
-	private Boolean vendaIsAberta(Long codVenda) {
+	private boolean vendaIsAberta(Long codVenda) {
 		Venda venda = vendas.findByCodigoEquals(codVenda);
 		return venda.isAberta();
 	}
