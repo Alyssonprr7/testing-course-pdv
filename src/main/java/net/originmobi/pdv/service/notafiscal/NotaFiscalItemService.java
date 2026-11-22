@@ -3,7 +3,7 @@ package net.originmobi.pdv.service.notafiscal;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Autowired;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,20 +24,20 @@ import net.originmobi.pdv.service.ProdutoService;
 @Service
 public class NotaFiscalItemService {
 
-	@Autowired
-	private NotaFiscalItemRepository itemServer;
+	private final NotaFiscalItemRepository itemServer;
+	private final NotaFiscalItemImpostoService impostos;
+	private final NotaFiscalTotaisServer totais;
+	private final ProdutoService produtos;
+	private final NotaFiscalService notas;
 
-	@Autowired
-	private NotaFiscalItemImpostoService impostos;
-
-	@Autowired
-	private NotaFiscalTotaisServer totais;
-
-	@Autowired
-	private ProdutoService produtos;
-
-	@Autowired
-	private NotaFiscalService notas;
+	public NotaFiscalItemService(NotaFiscalItemRepository itemServer, NotaFiscalItemImpostoService impostos,
+			NotaFiscalTotaisServer totais, ProdutoService produtos, NotaFiscalService notas) {
+		this.itemServer = itemServer;
+		this.impostos = impostos;
+		this.totais = totais;
+		this.produtos = produtos;
+		this.notas = notas;
+	}
 
 	@Transactional(readOnly = false, propagation = Propagation.REQUIRED)
 	public String insere(Long prod, Long codnota, int qtd, NotaFiscalTipo tipo) {
