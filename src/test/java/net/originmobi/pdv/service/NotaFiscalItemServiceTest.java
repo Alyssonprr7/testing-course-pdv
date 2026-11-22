@@ -10,13 +10,16 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.ArgumentMatchers.same;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.Before;
@@ -52,8 +55,8 @@ import net.originmobi.pdv.service.notafiscal.NotaFiscalService;
 import net.originmobi.pdv.service.notafiscal.NotaFiscalTotaisServer;
 
 /**
- * Testes unitários de NotaFiscalItemService (insere e verificaRegraDeTributacao).
- *
+  * Testes unitários de NotaFiscalItemService (insere, remove, buscaItensNota e
+ * verificaRegraDeTributacao).
  * verificaRegraDeTributacao é privado, então é exercitado por meio de insere.
  * As entidades (Produto, Tributacao, NotaFiscal...) são montadas como objetos
  * reais; só as dependências do serviço são mocks. Assim as cadeias de Optional
@@ -407,6 +410,56 @@ public class NotaFiscalItemServiceTest {
 
 		assertEquals("Erro ao salvar item na nota, chame o suporte", erro.getMessage());
 		verify(totais, never()).atualiza(any(), any());
+	}
+
+		// ------------------------------------------------------------------
+	// remove
+	// ------------------------------------------------------------------
+
+	// UT-NFI-24
+	@Test
+	public void deveRemoverItemEAtualizarTotaisDaNota() {
+		service.remove(5L, COD_NOTA);
+
+		verify(itemServer).deleteById(5L);
+		verify(totais).atualiza(eq(COD_NOTA), same(nota.getTotais()));
+	}
+
+	// UT-NFI-25
+	@Test
+	public void deveLancarExcecaoENaoAtualizarTotaisQuandoDeleteDoItemFalha() {
+		doThrow(new RuntimeException("falha qualquer no delete")).when(itemServer).deleteById(5L);
+
+		try {
+			service.remove(5L, COD_NOTA);
+			fail("Era esperada uma RuntimeException");
+		} catch (RuntimeException e) {
+			assertEquals("Erro ao tentar remover o item da nota, chame o suporte", e.getMessage());
+		}
+
+		verify(notas, never()).busca(any());
+		verify(totais, never()).atualiza(any(), any());
+	}
+
+	// ------------------------------------------------------------------
+	// buscaItensNota
+	// ------------------------------------------------------------------
+
+	// UT-NFI-26
+	@Test
+	public void deveDevolverItensDaNotaBuscadosNoRepositorio() {
+		List<Object> itens = Arrays.<Object>asList("item 1", "item 2");
+		when(itemServer.findByNotaFiscalCodigoEquals(COD_NOTA)).thenReturn(itens);
+
+		assertSame(itens, service.buscaItensNota(COD_NOTA));
+	}
+
+	// UT-NFI-27
+	@Test
+	public void deveDevolverListaVaziaQuandoNotaNaoTemItens() {
+		when(itemServer.findByNotaFiscalCodigoEquals(COD_NOTA)).thenReturn(Collections.<Object>emptyList());
+
+		assertEquals(0, service.buscaItensNota(COD_NOTA).size());
 	}
 
 	// ------------------------------------------------------------------

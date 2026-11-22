@@ -1,0 +1,20 @@
+-- Remove as notas criadas pelo teste (natureza da operação começa com SELENIUM NFI) e a massa fixa.
+drop temporary table if exists tmp_nfi_imposto;
+drop temporary table if exists tmp_nfi_totais;
+create temporary table tmp_nfi_imposto (codigo int);
+create temporary table tmp_nfi_totais (codigo int);
+insert into tmp_nfi_imposto select it.imposto_codigo from nota_fiscal_item it join nota_fiscal n on n.codigo = it.nota_fiscal_codigo where n.natureza_operacao like 'SELENIUM NFI%';
+insert into tmp_nfi_totais select totais_codigo from nota_fiscal where natureza_operacao like 'SELENIUM NFI%';
+delete it from nota_fiscal_item it join nota_fiscal n on n.codigo = it.nota_fiscal_codigo where n.natureza_operacao like 'SELENIUM NFI%';
+delete from nota_fiscal_item_imposto where codigo in (select codigo from tmp_nfi_imposto);
+delete from nota_fiscal where natureza_operacao like 'SELENIUM NFI%';
+delete from nota_fiscal_totais where codigo in (select codigo from tmp_nfi_totais);
+drop temporary table tmp_nfi_imposto;
+drop temporary table tmp_nfi_totais;
+delete from tributacao_regra where tributacao_codigo in (9101, 9102, 9103);
+delete from produto_estoque where produto_codigo in (9101, 9102, 9103);
+delete from estoque_movimentacao where produto_codigo in (9101, 9102, 9103);
+delete from produto where codigo in (9101, 9102, 9103);
+delete from tributacao where codigo in (9101, 9102, 9103);
+delete from pessoa where codigo = 9101;
+delete from endereco where codigo = 9101;

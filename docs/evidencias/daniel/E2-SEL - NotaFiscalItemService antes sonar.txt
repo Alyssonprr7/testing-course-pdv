@@ -1,0 +1,62 @@
+[INFO] Scanning [INFO] Scanning for projects...
+[INFO] 
+[INFO] -------------------------< net.originmobi:pdv >-------------------------
+[INFO] Building pdv 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ war ]---------------------------------
+[WARNING] The artifact mysql:mysql-connector-java:jar:8.0.33 has been relocated to com.mysql:mysql-connector-j:jar:8.0.33: MySQL Connector/J artifacts moved to reverse-DNS compliant Maven 2+ coordinates.
+[INFO] 
+[INFO] --- jacoco:0.8.11:prepare-agent (default) @ pdv ---
+[INFO] argLine set to "-javaagent:C:\\Users\\T-Gamer\\.m2\\repository\\org\\jacoco\\org.jacoco.agent\\0.8.11\\org.jacoco.agent-0.8.11-runtime.jar=destfile=D:\\Qualidade e Teste\\Parte 2\\testing-course-pdv\\target\\jacoco.exec"
+[INFO] 
+[INFO] --- resources:3.0.1:resources (default-resources) @ pdv ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Copying 1 resource
+[INFO] Copying 175 resources
+[INFO] 
+[INFO] --- compiler:3.7.0:compile (default-compile) @ pdv ---
+[INFO] Nothing to compile - all classes are up to date
+[INFO] 
+[INFO] --- resources:3.0.1:testResources (default-testResources) @ pdv ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Copying 5 resources
+[INFO] 
+[INFO] --- compiler:3.7.0:testCompile (default-testCompile) @ pdv ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 12 source files to D:\Qualidade e Teste\Parte 2\testing-course-pdv\target\test-classes
+[INFO] /D:/Qualidade e Teste/Parte 2/testing-course-pdv/src/test/java/net/originmobi/pdv/service/RecebimentoServiceTest.java: Some input files use or override a deprecated API.
+[INFO] /D:/Qualidade e Teste/Parte 2/testing-course-pdv/src/test/java/net/originmobi/pdv/service/RecebimentoServiceTest.java: Recompile with -Xlint:deprecation for details.
+[INFO] /D:/Qualidade e Teste/Parte 2/testing-course-pdv/src/test/java/net/originmobi/pdv/service/VendaServiceTest.java: D:\Qualidade e Teste\Parte 2\testing-course-pdv\src\test\java\net\originmobi\pdv\service\VendaServiceTest.java uses unchecked or unsafe operations.
+[INFO] /D:/Qualidade e Teste/Parte 2/testing-course-pdv/src/test/java/net/originmobi/pdv/service/VendaServiceTest.java: Recompile with -Xlint:unchecked for details.
+[INFO] 
+[INFO] --- surefire:3.2.5:test (default-test) @ pdv ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running net.originmobi.pdv.selenium.NotaFiscalItemSeleniumTest
+Starting msedgedriver 158.0.4370.33 (56b8f691820060b6e15f702165117f203442943f) on port 42782
+To submit feedback, report a bug, or suggest new features, please visit https://github.com/MicrosoftEdge/EdgeWebDriver
+
+Only local connections are allowed.
+Please see https://aka.ms/WebDriverSecurity for suggestions on keeping Microsoft Edge WebDriver safe.
+msedgedriver was started successfully on port 42782.
+nov 21, 2026 9:51:20 PM org.openqa.selenium.remote.ProtocolHandshake createSession
+INFORMAÇÕES: Detected dialect: W3C
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 15.32 s -- in net.originmobi.pdv.selenium.NotaFiscalItemSeleniumTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] 
+[INFO] --- jacoco:0.8.11:report (report) @ pdv ---
+[INFO] Loading execution data file D:\Qualidade e Teste\Parte 2\testing-course-pdv\target\jacoco.exec
+[INFO] Analyzed bundle 'pdv' with 172 classes
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  21.631 s
+[INFO] Finished at: 2026-11-21T21:51:35-03:00
+[INFO] ------------------------------------------------------------------------
