@@ -67,15 +67,27 @@ Isso permite conferir o resultado por uma fonte independente do print da tela.
 
 ## Situação atual do repositório
 
-O padrão acima foi aplicado às evidências do Bruno. As demais pastas ainda seguem
-convenções próprias, e não foram renomeadas de propósito:
+Conferida em 23/11/2026, antes da Entrega 2.
 
-- **`alysson/`** — já usa o formato `CT-CAIXA-001 - sucesso.png`, que é a base deste
-  padrão. Falta apenas normalizar o espaço antes do hífen em dois arquivos.
-- **`felipe/`** — usa uma pasta por caso (`manuais/RC-01/`) com prints numerados por
-  passo, mais `db-antes.txt`, `db-depois.txt` e `execucao.json`. É mais detalhado que
-  este padrão. Renomear esses arquivos quebraria o `execucao.json`, que se refere aos
-  prints pelo número do passo.
+| Pasta | Entrega 1 | Entrega 2 | Segue o padrão? |
+|---|---|---|---|
+| `bruno/` | `CT-BRU-MAN-00N - <cenário>.png`, `db-antes.txt`, `db-depois.txt` | `E2-COB`, `E2-MUT`, `E2-SEL`, `E2-SONAR`, `E2-NF`, `E2-UNI`, com momento | Sim |
+| `felipe/` | `manuais/RC-0N/` com prints numerados por passo, `db-antes.txt`, `db-depois.txt` e `execucao.json`; `unitario/` | `E2-COB`, `E2-MUT`, `E2-SEL`, `E2-SONAR`, `E2-INT`, `E2-UNI`, com momento (inclui `.csv`, `.xml`, `.json` e `.txt`) | Sim. Na Entrega 1, a pasta por caso é mais detalhada que o padrão e foi mantida |
+| `daniel/` | `evidencia1.png` a `evidencia4.png` | `E2-COB`, `E2-MUT`, `E2-SEL`, `E2-SONAR`, com momento | Sim na Entrega 2. Na Entrega 1, nomes genéricos |
+| `alysson/` | `CT-CAIXA-00N - <cenário>.png` (dois arquivos sem o espaço antes do hífen) | `E2-COB - CaixaService.png` e `E2-MUT - CaixaService.png` (sem momento); `cobertura-mutacao/` (prints do JaCoCo e do PIT); `postman-caixa/NN.png`; `SON-ANTES.png` e `SON-DEPOIS.png` | Parcialmente |
+| `jose/` | `Testes Manuais/Fechar Vendas/EV-NN.png` e `Testes Manuais/Incluir Pessoa/ev NN.png` | Uma pasta por ferramenta: `Unitário/`, `Mutação/`, `Selenium/`, `SonarQube/` e `Postamn-VendaService/` (prints `NN.png` e a collection) | Não, usa convenção própria |
 
-A decisão de unificar ou manter as duas formas é do grupo. Renomear arquivos de
-outro integrante sem combinar antes quebra as referências dos documentos dele.
+Onde encontrar cada tipo de evidência nas pastas que não seguem o padrão:
+
+| Tipo | `alysson/` | `jose/` |
+|---|---|---|
+| `COB` | `E2-COB - CaixaService.png`, `cobertura-mutacao/JaCoCo - *.png` | `Unitário/Cobertura *.png`, `Unitário/Complexidade *.png` |
+| `MUT` | `E2-MUT - CaixaService.png`, `cobertura-mutacao/PIT - *.png` | `Mutação/` |
+| `SEL` | sem print na pasta | `Selenium/Resultados.png` |
+| `SONAR` | `SON-ANTES.png`, `SON-DEPOIS.png` | `SonarQube/` |
+| `INT` | `postman-caixa/NN.png` | `Postamn-VendaService/` |
+
+Os arquivos não foram renomeados de propósito. A conferência foi feita no dia antes da
+entrega, e o relatório da Entrega 2 aponta para caminhos dessas pastas (por exemplo, a
+collection em `jose/Postamn-VendaService/`). Renomear arquivos de outro integrante sem
+combinar antes quebra as referências dos documentos dele.
