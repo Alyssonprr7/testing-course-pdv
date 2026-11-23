@@ -17,6 +17,12 @@ Sistema de ERP web desenvolvido em Java com Spring Framework
 # Documentos do Trabalho
 [Pasta no Google Drive com os demais arquivos](https://drive.google.com/drive/folders/1kaB5_6IXWjn08Hi6ciTrBH_lG2oXEZnD)
 
+## Entrega 2
+- [Relatório da Entrega 2](https://docs.google.com/document/d/14-c113KnG99LrxuIJ7HN8CHjuopH1GB9Wwr1TgqK8wU/edit) (Google Docs, com histórico de versões) · [PDF](<docs/Relatório da Entrega 2.pdf>)
+- [Análise da qualidade do produto (ISO/IEC 25010)](https://docs.google.com/document/d/19vSjWwDr6OjjrqNA9YLqIL4YpkOU9lFwh382oqAiUUc/edit)
+- [Plano de teste da Entrega 2](https://docs.google.com/document/d/1NjO8ZBsYKj98g4IbDnVkT_MAz-q-dTmw/edit) (Google Docs) · [PDF](<docs/Plano de teste - Entrega 2.pdf>) · [DOCX](<docs/Plano de teste - Entrega 2.docx>)
+- [Pasta da Entrega 2 no Google Drive](https://drive.google.com/drive/folders/1Ko5v641ighvYvaLxr5CPpB1hTwvHV1uO)
+
 # Artefatos do trabalho
 - `docs/ai/AI-LOG.md`: registro dos usos de IA
 - [`docs/ai/AI-LOG-Felipe Ratto.md`](docs/ai/AI-LOG-Felipe%20Ratto.md): registro individual de Felipe Ratto
